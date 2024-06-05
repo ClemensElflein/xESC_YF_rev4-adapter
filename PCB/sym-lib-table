@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "INA180A3IDBVR")(type "Legacy")(uri "${KIPRJMOD}/libs/INA180A3IDBVR/INA180A3IDBVR.lib")(options "")(descr ""))
+)
