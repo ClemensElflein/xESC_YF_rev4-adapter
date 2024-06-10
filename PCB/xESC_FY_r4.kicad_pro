@@ -37,9 +37,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.762,
-          "height": 1.524,
-          "width": 1.524
+          "drill": 0.2,
+          "height": 0.3,
+          "width": 0.3
         },
         "silk_line_width": 0.12,
         "silk_text_italic": false,
@@ -49,7 +49,7 @@
         "silk_text_upright": false,
         "zones": {
           "45_degree_only": false,
-          "min_clearance": 0.3
+          "min_clearance": 0.0
         }
       },
       "diff_pair_dimensions": [
@@ -59,7 +59,9 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "starved_thermal|260950000|121275000|1e61c4a3-087f-442c-8ee6-2e2d039ac3f6|9b4e3ece-2494-4068-9153-bf2df386b437|F.Cu"
+      ],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2
@@ -482,40 +484,6 @@
       },
       {
         "bus_width": 12,
-        "clearance": 0.2,
-        "diff_pair_gap": 0.5,
-        "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.5,
-        "line_style": 0,
-        "microvia_diameter": 0.5,
-        "microvia_drill": 0.2,
-        "name": "3V3",
-        "pcb_color": "rgba(0, 0, 0, 0.000)",
-        "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 1.0,
-        "via_diameter": 0.6,
-        "via_drill": 0.3,
-        "wire_width": 6
-      },
-      {
-        "bus_width": 12,
-        "clearance": 0.2,
-        "diff_pair_gap": 0.5,
-        "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.5,
-        "line_style": 0,
-        "microvia_diameter": 0.5,
-        "microvia_drill": 0.2,
-        "name": "5V",
-        "pcb_color": "rgba(0, 0, 0, 0.000)",
-        "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 1.5,
-        "via_diameter": 0.6,
-        "via_drill": 0.3,
-        "wire_width": 6
-      },
-      {
-        "bus_width": 12,
         "clearance": 0.1525,
         "diff_pair_gap": 0.25,
         "diff_pair_via_gap": 0.25,
@@ -556,11 +524,11 @@
     "netclass_assignments": null,
     "netclass_patterns": [
       {
-        "netclass": "5V",
+        "netclass": "Power",
         "pattern": "+5V"
       },
       {
-        "netclass": "3V3",
+        "netclass": "Power",
         "pattern": "+3V3"
       },
       {
@@ -570,6 +538,10 @@
       {
         "netclass": "Vdrive",
         "pattern": "Vdrive"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "GND"
       }
     ]
   },
