@@ -1,4 +1,0 @@
-(fp_lib_table
-  (version 7)
-  (lib (name "TPS1H200AQDGNRQ1")(type "KiCad")(uri "${KIPRJMOD}/libs/TPS1H200AQDGNRQ1")(options "")(descr ""))
-)

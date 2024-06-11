@@ -59,9 +59,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        "starved_thermal|260950000|121275000|1e61c4a3-087f-442c-8ee6-2e2d039ac3f6|9b4e3ece-2494-4068-9153-bf2df386b437|F.Cu"
-      ],
+      "drc_exclusions": [],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2
@@ -460,7 +458,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "xESC_FY_r4.kicad_pro",
+    "filename": "xESC_YF_r4.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -551,7 +549,7 @@
       "idf": "",
       "netlist": "",
       "plot": "",
-      "pos_files": "",
+      "pos_files": "CPL",
       "specctra_dsn": "",
       "step": "xESC_FY_r4.step",
       "svg": "",
@@ -651,6 +649,120 @@
           "group_by": false,
           "label": "Beschreibung",
           "name": "Description",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Description_1",
+          "name": "Description_1",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Availability",
+          "name": "Availability",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "JLCPCB",
+          "name": "JLCPCB",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "CHECK_PRICES",
+          "name": "CHECK_PRICES",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "MF",
+          "name": "MF",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "MP",
+          "name": "MP",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "PACKAGE",
+          "name": "PACKAGE",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "PRICE",
+          "name": "PRICE",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "PURCHASE-URL",
+          "name": "PURCHASE-URL",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Package",
+          "name": "Package",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Check_prices",
+          "name": "Check_prices",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Price",
+          "name": "Price",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Purchase-URL",
+          "name": "Purchase-URL",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "SNAPEDA_LINK",
+          "name": "SNAPEDA_LINK",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Device",
+          "name": "Sim.Device",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "Sim.Pins",
+          "name": "Sim.Pins",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "SnapEDA_Link",
+          "name": "SnapEDA_Link",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "AVAILABILITY",
+          "name": "AVAILABILITY",
+          "show": false
+        },
+        {
+          "group_by": false,
+          "label": "DESCRIPTION",
+          "name": "DESCRIPTION",
           "show": false
         }
       ],
