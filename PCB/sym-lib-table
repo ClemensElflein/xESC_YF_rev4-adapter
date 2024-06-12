@@ -1,5 +1,4 @@
 (sym_lib_table
   (version 7)
-  (lib (name "2024-06-11_16-14-37")(type "KiCad")(uri "${KIPRJMOD}/libs/TPS1H200AQDGNRQ1/2024-06-11_16-14-37.kicad_sym")(options "")(descr ""))
   (lib (name "TPS1H200AQDGNRQ1")(type "KiCad")(uri "${KIPRJMOD}/libs/TPS1H200AQDGNRQ1.snapeda/TPS1H200AQDGNRQ1.kicad_sym")(options "")(descr ""))
 )
