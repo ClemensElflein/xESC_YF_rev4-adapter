@@ -38,8 +38,8 @@
         "other_text_upright": false,
         "pads": {
           "drill": 0.2,
-          "height": 0.3,
-          "width": 0.3
+          "height": 0.3999,
+          "width": 0.3999
         },
         "silk_line_width": 0.12,
         "silk_text_italic": false,
@@ -59,7 +59,9 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "lib_footprint_mismatch|263430000|120950000|d7623c16-df01-43ae-a2d3-cb7fc6d66c11|00000000-0000-0000-0000-000000000000"
+      ],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2

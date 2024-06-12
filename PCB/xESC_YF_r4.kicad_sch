@@ -3189,12 +3189,13 @@
 					(hide yes)
 				)
 			)
-			(property "Description" ""
+			(property "Description" "40-V, 200-mΩ, 1-ch automotive smart high-side switch with adjustable current limit"
 				(at 0 0 0)
 				(effects
 					(font
 						(size 1.27 1.27)
 					)
+					(justify bottom)
 					(hide yes)
 				)
 			)
@@ -3339,16 +3340,6 @@
 				)
 			)
 			(property "AVAILABILITY" "In Stock"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify bottom)
-					(hide yes)
-				)
-			)
-			(property "DESCRIPTION" "40-V, 200-mΩ, 1-ch automotive smart high-side switch with adjustable current limit"
 				(at 0 0 0)
 				(effects
 					(font
@@ -8671,7 +8662,7 @@
 				)
 			)
 		)
-		(property "Footprint" "TPS1H200AQDGNRQ1:SOP65P490X110-9N-AHMOD"
+		(property "Footprint" "TPS1H200AQDGNRQ1.snapeda:SOP65P490X110-9N"
 			(at 121.92 43.18 0)
 			(effects
 				(font
@@ -8690,166 +8681,16 @@
 				(hide yes)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "40-V, 200-mΩ, 1-ch automotive smart high-side switch with adjustable current limit"
 			(at 121.92 43.18 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
-			)
-		)
-		(property "SNAPEDA_LINK" "https://www.snapeda.com/parts/TPS1H200AQDGNRQ1/Texas+Instruments/view-part/?ref=snap"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "CHECK_PRICES" "https://www.snapeda.com/parts/TPS1H200AQDGNRQ1/Texas+Instruments/view-part/?ref=eda"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "PURCHASE-URL" "https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=3210362&manufacturer=Texas Instruments&part_name=TPS1H200AQDGNRQ1&search_term=tps1h200aqdgnrq1"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "PACKAGE" "HVSSOP-8 Texas Instruments"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "PRICE" "None"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
 				(hide yes)
 			)
 		)
 		(property "Package" "HVSSOP-8 Texas Instruments"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "Check_prices" "https://www.snapeda.com/parts/TPS1H200AQDGNRQ1/Texas+Instruments/view-part/?ref=eda"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "SnapEDA_Link" "https://www.snapeda.com/parts/TPS1H200AQDGNRQ1/Texas+Instruments/view-part/?ref=snap"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "Price" "None"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "MF" "Texas Instruments"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "MP" "TPS1H200AQDGNRQ1"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "Purchase-URL" "https://www.snapeda.com/api/url_track_click_mouser/?unipart_id=3210362&manufacturer=Texas Instruments&part_name=TPS1H200AQDGNRQ1&search_term=tps1h200"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "Description_1" "\n40-V, 200-mΩ, 1-ch automotive smart high-side switch with adjustable current limit\n"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "Availability" "In Stock"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "AVAILABILITY" "In Stock"
-			(at 121.92 43.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify bottom)
-				(hide yes)
-			)
-		)
-		(property "DESCRIPTION" "40-V, 200-mΩ, 1-ch automotive smart high-side switch with adjustable current limit"
 			(at 121.92 43.18 0)
 			(effects
 				(font
