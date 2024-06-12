@@ -37,9 +37,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.2,
-          "height": 0.3999,
-          "width": 0.3999
+          "drill": 0.0,
+          "height": 1.76,
+          "width": 1.425
         },
         "silk_line_width": 0.12,
         "silk_text_italic": false,
@@ -59,9 +59,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        "lib_footprint_mismatch|263430000|120950000|d7623c16-df01-43ae-a2d3-cb7fc6d66c11|00000000-0000-0000-0000-000000000000"
-      ],
+      "drc_exclusions": [],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2
@@ -245,7 +243,8 @@
   },
   "erc": {
     "erc_exclusions": [
-      "lib_symbol_issues|1219200|431800|3d048df7-36d0-44ff-a82b-2fc28027e2b9|00000000-0000-0000-0000-000000000000|||"
+      "lib_symbol_issues|1219200|431800|3d048df7-36d0-44ff-a82b-2fc28027e2b9|00000000-0000-0000-0000-000000000000|||",
+      "lib_symbol_issues|1587500|419100|3d048df7-36d0-44ff-a82b-2fc28027e2b9|00000000-0000-0000-0000-000000000000|||"
     ],
     "meta": {
       "version": 0
