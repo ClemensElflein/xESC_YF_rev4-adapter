@@ -6255,7 +6255,7 @@
 		)
 		(uuid "c7a8fc7e-3267-46f3-a1a8-eca4b68c350c")
 	)
-	(text "Current Sense Calculations\n----------------------\nI_{nom} = 30W/24V = 1.25A\nV_{shunt} full-scale target = 100mV (max. 500mV)\nR_{shunt} = 0.1V/1.25A = 80mΩ\nP_{shunt} = 0.1V*1.25A = 0.125W = 1/8W\n\nMore common shunt value = 82mΩ\nV_{shunt} = 82mΩ * 1.25A = 0.1025V\n\nV_{OUTMAX} = 3.3V - 0.7V - 0.1025V = 2.4975V\nV_{OUT} target = 2V\n\nGain = 19.51 => 20G\nR_{L} = 20kΩ\n\nV_{OUT} nom = 1.25A * 0.082Ω * 0.001 * 20000 = 2.05V\n"
+	(text "Current Sense Calculations\n----------------------\nI_{nom} = 30W/24V = 1.25A\nV_{shunt} full-scale target = 100mV (max. 500mV)\nR_{shunt} = 0.1V/1.25A = 80mΩ\nP_{shunt} = 0.1V*1.25A = 0.125W = 1/8W\n\nMore common shunt value = 75mΩ\nV_{shunt} = 75mΩ * 1.25A = 0.09375V\nP_{shunt} = 0.09375V * 1.25A = 0.117W => 1/4W\n\nV_{OUTMAX} = 3.3V - 0.7V - 0.09375V = 2.506V\nV_{OUT} target = 2V\n\nGain = 21.33 => 20G\nR_{L} = 20kΩ\n\nV_{OUT} nom = 1.25A * 0.075Ω * 0.001 * 20000 = 1.875V\n"
 		(exclude_from_sim no)
 		(at 131.064 97.79 0)
 		(effects
@@ -7502,6 +7502,15 @@
 				(hide yes)
 			)
 		)
+		(property "JLCPCB" "KT-0603G"
+			(at 93.98 179.07 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "dab52c84-6454-46ab-bc94-3bb4551f4409")
 		)
@@ -7687,6 +7696,15 @@
 		)
 		(property "Part Number" "LTST-C191KRKT"
 			(at 102.87 179.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB" "KT-0603R"
+			(at 102.87 179.07 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9100,7 +9118,7 @@
 				)
 			)
 		)
-		(property "Value" "TPS1H200A-Q1"
+		(property "Value" "TPS1H200A"
 			(at 158.75 22.098 0)
 			(effects
 				(font
@@ -9143,6 +9161,15 @@
 					(size 1.27 1.27)
 				)
 				(justify bottom)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB" "C2653785"
+			(at 158.75 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
 				(hide yes)
 			)
 		)
@@ -10362,7 +10389,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "STM32C011F6Px"
+		(property "Value" "STM32C011F6P6"
 			(at 98.7141 95.25 0)
 			(effects
 				(font
@@ -10391,6 +10418,15 @@
 			)
 		)
 		(property "Description" "STMicroelectronics Arm Cortex-M0+ MCU, 32KB flash, 6KB RAM, 48 MHz, 2.0-3.6V, 18 GPIO, TSSOP20"
+			(at 93.98 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB" "C5456198"
 			(at 93.98 118.11 0)
 			(effects
 				(font
@@ -10687,7 +10723,7 @@
 				)
 			)
 		)
-		(property "Value" "82mR"
+		(property "Value" "75mR"
 			(at 226.9236 82.55 90)
 			(effects
 				(font
@@ -10695,7 +10731,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
+		(property "Footprint" "Resistor_SMD:R_2010_5025Metric_Pad1.40x2.65mm_HandSolder"
 			(at 228.092 82.55 90)
 			(effects
 				(font
@@ -10722,7 +10758,7 @@
 				(hide yes)
 			)
 		)
-		(property "Stock_PN" "R-0805-.082-0.25W-1%"
+		(property "Stock_PN" "R-2010-.075-0.5W-1%"
 			(at 229.87 82.55 0)
 			(effects
 				(font
@@ -10731,7 +10767,7 @@
 				(hide yes)
 			)
 		)
-		(property "Part Number" "KDV08FR082ET"
+		(property "Part Number" "RTT20R075FTE"
 			(at 229.87 82.55 0)
 			(effects
 				(font
@@ -10740,7 +10776,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB" "C2442701"
+		(property "JLCPCB" "C333474"
 			(at 229.87 82.55 90)
 			(effects
 				(font

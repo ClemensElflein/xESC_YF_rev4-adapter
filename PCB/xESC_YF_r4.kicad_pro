@@ -59,7 +59,9 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "lib_footprint_mismatch|263430000|120950000|d7623c16-df01-43ae-a2d3-cb7fc6d66c11|00000000-0000-0000-0000-000000000000"
+      ],
       "meta": {
         "filename": "board_design_settings.json",
         "version": 2
@@ -137,7 +139,7 @@
         "min_track_width": 0.127,
         "min_via_annular_width": 0.05,
         "min_via_diameter": 0.45,
-        "solder_mask_to_copper_clearance": 0.0,
+        "solder_mask_to_copper_clearance": 0.005,
         "use_height_for_length_calcs": true
       },
       "teardrop_options": [
@@ -242,10 +244,7 @@
     "equivalence_files": []
   },
   "erc": {
-    "erc_exclusions": [
-      "lib_symbol_issues|1219200|431800|3d048df7-36d0-44ff-a82b-2fc28027e2b9|00000000-0000-0000-0000-000000000000|||",
-      "lib_symbol_issues|1587500|419100|3d048df7-36d0-44ff-a82b-2fc28027e2b9|00000000-0000-0000-0000-000000000000|||"
-    ],
+    "erc_exclusions": [],
     "meta": {
       "version": 0
     },
@@ -551,7 +550,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "Gerber/",
       "pos_files": "CPL",
       "specctra_dsn": "",
       "step": "xESC_FY_r4.step",
@@ -583,7 +582,7 @@
           "show": true
         },
         {
-          "group_by": true,
+          "group_by": false,
           "label": "Value",
           "name": "Value",
           "show": true
@@ -607,7 +606,7 @@
           "show": true
         },
         {
-          "group_by": true,
+          "group_by": false,
           "label": "DNP",
           "name": "${DNP}",
           "show": true
@@ -770,7 +769,7 @@
         }
       ],
       "filter_string": "",
-      "group_symbols": true,
+      "group_symbols": false,
       "name": "",
       "sort_asc": true,
       "sort_field": "Reference"
