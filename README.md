@@ -19,7 +19,8 @@
 <h3 align="center">xESC_YF_rev4-adapter for <a href="https://github.com/ClemensElflein/OpenMower">OpenMower</a></h3>
 
   <p align="center">
-    Simple xESC adapter for stock Rev4 blade-motor (the one with a internal motor controller under his cap)
+    Simple xESC adapter for stock Rev4 (built 2017) blade-motor<br>
+    (the one with a internal motor controller under his cap)
     <br />
   </p>
 
@@ -34,13 +35,19 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Those who want use <a href="https://github.com/ClemensElflein/OpenMower">OpenMower</a> with an older YardForce "Rev. 4" model, fail with the used Blade-Motor as it has an embedded motor-controller under it's cap.
+Those who want use <a href="https://github.com/ClemensElflein/OpenMower">OpenMower</a> with an older YardForce "Rev. 4" (built 2017) model, fail with the stock Blade-Motor as it has an embedded motor-controller under it's cap.
 
-It's not very difficult to remove that motor-controller, wire the coil cables directly, add a new 4 pin cable to the motor hall sensors and connect them to OM's mow-motor-hall-input plug and use OM's xESC.<br>
-But it's somehow "crafted" and you need to be capable to do those things.
+It's not very difficult to use this motor:
+- Remove stock driver controller
+- Wire the coil cables directly
+- Add a 5 pin cable to the motor hall sensors
+- Connect them to OM's mow-motor-hall-input plug
+and use OM's xESC.
 
-As an alternative, this "Adapter" is thought to replace OM's default xESC.<br>
-In addition to this adapter, it's still **required to exchange two cables of the mow motor cabling**. But this should be also possible for the untalented, by cutting the two relevant wires, and use two luster terminal to cross them.
+But it's somehow "crafted" and you need to be capable to do these things.
+
+As an alternative, this "Adapter" is thought to replace OM's default Mow- xESC.<br>
+In addition to this adapter, it's still **required to exchange two cables of the mow motor cabling**. But this should be also possible for the untalented, by cutting the two relevant wires, and use two luster terminals to cross them.
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
