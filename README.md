@@ -16,7 +16,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-<h3 align="center">xESC_YF_rev4-adapter for <a href="https://github.com/ClemensElflein/OpenMower">OpenMower</a></h3>
+<h3 align="center">xESC YardForce (Rev4) adapter for <a href="https://github.com/ClemensElflein/OpenMower">OpenMower</a></h3>
 
   <p align="center">
     Simple xESC adapter for stock Rev4 (built 2017) blade-motor<br>
@@ -67,7 +67,7 @@ In addition to this adapter, it's still **required to exchange two cables of the
 ## Getting Started
 
 > [!WARNING]  
-> This project is **early development state** and not usable in any way at the moment!
+> This project is in **early development state** and not usable in any way at the moment!
 
 <!--
 This is an example of how you may give instructions on setting up your project locally.
