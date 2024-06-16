@@ -72,7 +72,19 @@ In addition to this adapter, it's still **required to exchange two cables of the
 <!--
 This is an example of how you may give instructions on setting up your project locally.
 To get a local copy up and running follow these simple example steps.
+-->
 
+## LED codes
+
+<table>
+  <tr><th>Green</th><th>Red</th><th>Description</th></tr>
+  <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
+  <tr><td></td><td>blink (1Hz)</td><td>Motor/Controller Fault. Check ESC's status in mower/status to see error status code</td></tr>
+  <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
+</table>
+
+
+<!--
 ### Prerequisites
 
 This is an example of how to list things you need to use the software and how to install them.
