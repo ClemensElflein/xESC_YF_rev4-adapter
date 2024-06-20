@@ -16,12 +16,9 @@
 #ifndef _DEBUG_H_
 #define _DEBUG_H_
 
-// Define to stream debugging messages via UART
-#define SERIAL_DEBUG
 #define DEBUG_PREFIX ""  // You may define a debug prefix string
 
-#ifdef SERIAL_DEBUG
-#define DEBUG_SERIAL debugSerial
+#ifdef DEBUG_SERIAL
 
 // Some bloody simple debug macros which superfluous '#ifdef USB_DEBUG' ...
 #define DEBUG_BEGIN(b)     \

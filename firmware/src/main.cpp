@@ -21,31 +21,29 @@
 #include <Arduino.h>
 #include <ezLED.h>
 
-#include "debug.h"
 // #include "hardware/pwm.h"
 #include <FastCRC.h>
 #include <PacketSerial.h>
 
 #include "config.h"
+#include "debug.h"
 // #include "hardware/adc.h"
 // #include "hardware/dma.h"
 // #include "hardware/watchdog.h"*/
 #include "pins.h"
 #include "xesc_2040_datatypes.h"
 
-#define LED_ERROR_HOST_COMM led_red.blink(50, 100)
+#define LED_ERROR_HOST_COMM led_red.blinkNumberOfTimes(50, 100, 1)
 
 /*#define WRAP 3299
 
 // The current duty for the motor (-1.0 - 1.0)
 volatile float duty = 0.0;
 // The absolute value to cap the requested duty to stay within current limits
-(0.0 - 1.0) volatile float current_limit_duty = 0.0;
+(0.0 - 1.0) volatile float current_limit_duty = 0.0;*/
 // The requested duty
-volatile float duty_setpoint = 0.0;
-// The ramped duty. This will ramp to avoid current spikes
-volatile float duty_setpoint_ramped = 0.0;
-
+float duty_setpoint = 0.0;
+/*
 // init with invalid hall so we have to update
 volatile uint last_hall = 0xFF;
 volatile uint last_commutation = 0xFF;
@@ -54,8 +52,9 @@ volatile float last_duty = 1000.0f;
 */
 
 volatile uint32_t tacho = 0;
-volatile uint32_t tacho_absolute = 0;  // wheel ticks absolute
-volatile bool direction;               // direction CW/CCW
+volatile uint8_t sa_cycles = 0;  // SA cycles since last status
+volatile uint8_t last_sa_cycles = 0;
+volatile uint32_t last_status_us = 0;
 
 volatile Xesc2040StatusPacket status = {0};
 Xesc2040SettingsPacket settings = {0};
@@ -84,7 +83,11 @@ ezLED led_red(PIN_LED_RED, CTRL_ANODE);
 
 HardwareTimer *status_timer;
 
-#ifdef SERIAL_DEBUG
+// volatile uint32_t FrequencyMeasured, LastCapture = 0, CurrentCapture;
+// uint32_t input_freq = 0;
+// volatile uint32_t rolloverCompareCount = 0;
+
+#ifdef DEBUG_SERIAL
 HardwareSerial debugSerial(DEBUG_RX, DEBUG_TX);
 #endif
 
@@ -222,28 +225,83 @@ void updateFaults() {
 void send_status() {
     status.seq++;
     updateFaults();
+
+    /* SA cycle math
+     *
+     * My stock motor stats:
+     *   Nom RPM @ 24VDC = 3488rpm = 4.3ms/SA cycle whereas 4 cycles = 360°
+     *
+     * Do math with max. RPM = 5000
+     * Shortest Cycle = 1/(5000rpm/60sec*4cycles) = 3ms
+     */
+    uint32_t now = micros();
+    if (now < last_status_us) {  // overflow
+        sa_cycles = last_sa_cycles;
+    }
+    last_status_us = now;
+    last_sa_cycles = sa_cycles;
+    tacho += sa_cycles;
+
+    DEBUG_PRINTF("%u ms, SA %i, sa_cycles (since last status) %u, tacho %u\n", millis(), digitalRead(PIN_MTR_SA), sa_cycles, tacho);
+    sa_cycles = 0;
+
     // status.duty_cycle = duty;
     status.tacho = tacho;
-    status.tacho_absolute = tacho_absolute;
-    status.direction = direction;
+    status.tacho_absolute = tacho;
+    status.direction = 0;
+
     sendMessage(&status, sizeof(status));
 }
 
+/*void InputCapture_IT_callback(void) {
+    CurrentCapture = SATimer->getCaptureCompare(sa_channel);
+    // frequency computation
+    if (CurrentCapture > LastCapture) {
+        FrequencyMeasured = input_freq / (CurrentCapture - LastCapture);
+    } else if (CurrentCapture <= LastCapture) {
+        // 0x1000 is max overflow value
+        FrequencyMeasured = input_freq / (0x10000 + CurrentCapture - LastCapture);
+    }
+    LastCapture = CurrentCapture;
+    rolloverCompareCount = 0;
+}*/
+
+/* In case of timer rollover, frequency is to low to be measured set value to 0
+   To reduce minimum frequency, it is possible to increase prescaler. But this is at a cost of precision. */
+/*void Rollover_IT_callback(void) {
+    rolloverCompareCount++;
+
+    if (rolloverCompareCount > 1) {
+        FrequencyMeasured = 0;
+    }
+}*/
+
+/* Handle SA raising edge (called by EXTI)
+ * Don't waste CPU here as this ISR might get called every 3ms
+ */
+void SA_ISR() {
+    sa_cycles++;
+}
+
 void setup() {
-    DEBUG_BEGIN(9600);
+    DEBUG_BEGIN(DEBUG_BAUD);
     DEBUG_PRINTLN("setup()");
 
-#ifdef HW_RMECOWV100  // Dev ButtonBoard while waiting for PCB
-    // Disable ESP-WROOM-02 on Dev ButtonBoard
-    pinMode(PF7, OUTPUT);
-    digitalWrite(PF7, LOW);  // EN = off
-    delay(500);
+    // VM Switch
+    pinMode(PIN_VMS_IN, OUTPUT);
+    //digitalWrite(PIN_VMS_IN, LOW);
+    digitalWrite(PIN_VMS_IN, HIGH);
 
-    // Test alt comm port for dev
-    // hostSerial.begin(9600);
-    // delay(500);
-    // hostSerial.write("Hello World", 5);
-#endif
+    // Motor
+    pinMode(PIN_MTR_BRK, OUTPUT);
+    digitalWrite(PIN_MTR_BRK, LOW);
+    //digitalWrite(PIN_MTR_BRK, HIGH);
+    pinMode(PIN_MTR_RS, OUTPUT);
+    digitalWrite(PIN_MTR_RS, HIGH);
+
+    // Tacho get handled with ISR on PIN_MTR_SA
+    pinMode(PIN_MTR_SA, INPUT_FLOATING);
+    attachInterrupt(PIN_MTR_SA, SA_ISR, RISING);
 
     // We've hardware timer on mass, no need to count millis() by hand
     status_timer = new HardwareTimer(TIMER_STATUS);
@@ -254,10 +312,8 @@ void setup() {
     status.message_type = XESC2040_MSG_TYPE_STATUS;
     status.fw_version_major = 0;
     status.fw_version_minor = 10;
+
     // Already initialized
-    // tacho = 0;
-    // tacho_absolute = 0;
-    // settings_valid = false;
 
     // --- old
 
@@ -265,19 +321,20 @@ void setup() {
 
     last_commutation = 0xFF;*/
 
-    // Setup Pin directions
-    /*pinMode(PIN_UH, OUTPUT);
-    pinMode(PIN_VH, OUTPUT);
-
+    /*
     analogReadResolution(12);*/
 
+    // Comms UART
+
+    //SYSCFG->CFGR1 |= 0b11000;  // Remap PA12 to PA10 and PA11 to PA9
+                               // RCC_APBENR2.SYSCFGEN;
     PACKET_SERIAL.begin(115200);
     packetSerial.setStream(&PACKET_SERIAL);
     packetSerial.setPacketHandler(&onPacketReceived);
 
     // LED blink code "Boot up successful"
-    led_green.blinkNumberOfTimes(100, 200, 3);  // 50ms ON, 200ms OFF, repeat 3 times, blink immediately
-    led_red.blinkNumberOfTimes(100, 200, 3);    // 50ms ON, 200ms OFF, repeat 3 times, blink immediately
+    led_green.blinkNumberOfTimes(200, 200, 3);  // 50ms ON, 200ms OFF, repeat 3 times, blink immediately
+    led_red.blinkNumberOfTimes(200, 200, 3);    // 50ms ON, 200ms OFF, repeat 3 times, blink immediately
 }
 
 /*void loop1()
@@ -322,7 +379,6 @@ void setup() {
   updateCommutation();
 }*/
 
-
 /*float readVIN()
 {
   return (float)analogRead(PIN_VIN) * (3.3f / 4096.0f) * ((VIN_R1 + VIN_R2) /
@@ -354,8 +410,7 @@ void onPacketReceived(const uint8_t *buffer, size_t size) {
             // Got control packet
             last_watchdog_millis = millis();
             Xesc2040ControlPacket *packet = (Xesc2040ControlPacket *)buffer;
-            // TODO!!!
-            // duty_setpoint = constrain(packet->duty_cycle, -MAX_DUTY_CYCLE, MAX_DUTY_CYCLE);
+            duty_setpoint = packet->duty_cycle;
         } break;
         case XESC2040_MSG_TYPE_SETTINGS: {
             if (size != sizeof(struct Xesc2040SettingsPacket)) {
@@ -375,8 +430,22 @@ void onPacketReceived(const uint8_t *buffer, size_t size) {
 }
 
 void loop() {
+    static uint32_t test = millis();
+
     led_green.loop();
     led_red.loop();
+
+    // DEBUG_PRINTF("SA %i\n", digitalRead(PIN_MTR_SA));
+    //DEBUG_PRINTF("SA %i, tacho %u\n", digitalRead(PIN_MTR_SA), tacho);
+    //  DEBUG_PRINTF("SA %i, Frequency %u\n", digitalRead(PIN_MTR_SA), FrequencyMeasured);
+
+    if ((millis() - test >= 10000)) {
+        test = millis();
+        DEBUG_PRINTF("Toggle Motor\n");
+        //digitalToggle(PIN_MTR_RS);
+
+        //digitalToggle(PIN_VMS_IN);
+    }
 
     /*
 
@@ -421,5 +490,5 @@ void loop() {
 
   analog_round_robin = (analog_round_robin + 1) % 4;
   */
-  packetSerial.update();
+    packetSerial.update();
 }

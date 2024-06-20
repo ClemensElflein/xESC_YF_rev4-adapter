@@ -1,34 +1,22 @@
 #pragma once
 
-#ifdef HW_RMECOWV100 // Dev ButtonBoard while waiting for PCB
-
-// LEDs
-#define PIN_LED_GREEN PB11
-#define PIN_LED_RED PB12
-
-// Serial communication with host (WROOM2)
-#define HOST_RX PA10
-#define HOST_TX PA9
-
-// Serial print(f) debugging (LowLevel Serial Pins of ButtonBoard)
-#define DEBUG_RX PA3
-#define DEBUG_TX PA2
-
-#else
-
-// LEDs
+// GPIOs
 #define PIN_LED_GREEN PC15
 #define PIN_LED_RED PC14
 
-// Serial communication with host
-#define HOST_RX PA12
-#define HOST_TX PA11
+#define PIN_VMS_IN PA0  // VM-Switch IN
 
-// Serial print(f) debugging (LowLevel Serial Pins of ButtonBoard)
+#define PIN_MTR_SA PB7   // Motor's SA (Hall) pin
+#define PIN_MTR_BRK PA3  // Motor's BRK pin
+#define PIN_MTR_RS PA6   // Motor's RS pin
+
+// Serial communication with host
+#define HOST_RX PA10_R
+#define HOST_TX PA9_R
+
+// Serial print(f) debugging on proto RX/TX PCB pins
 #define DEBUG_RX PA5
 #define DEBUG_TX PA4
-
-#endif
 
 // Timer
 #define TIMER_STATUS TIM14

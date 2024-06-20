@@ -131,10 +131,10 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 (Ordered by priority)
 
 - [x] Design schematics and PCB 
-- [ ] Produce PCB (commissioned 2024-06-13)
+- [x] Produce PCB
 - [ ] Firmware 
-    - [ ] Generic VM control (on/off)
-    - [ ] Generic motor control (start, stop, break)
+    - [x] Generic VM control (on/off)
+    - [x] Generic motor control (start, stop, break)
     - [ ] Read SA, math RPM
     - [ ] Open VMC detection
     - [ ] Motor current consumption
