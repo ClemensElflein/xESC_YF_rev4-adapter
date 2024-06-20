@@ -1857,7 +1857,7 @@
 		(descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R12"
-			(at -2.8 0.05 -90)
+			(at 2.7 0.05 -90)
 			(layer "F.SilkS")
 			(uuid "cda5daa6-0f97-4f1e-a75b-1e63c8ac4de3")
 			(effects
@@ -2355,7 +2355,7 @@
 		(descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R14"
-			(at 2.9 0.1 90)
+			(at -2.7 -0.1 90)
 			(layer "F.SilkS")
 			(uuid "de34bf7b-14ce-41ad-9f2b-726648d1ad4d")
 			(effects
@@ -7130,7 +7130,7 @@
 		(descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R13"
-			(at 0 1.2 90)
+			(at -2.7 0 90)
 			(layer "F.SilkS")
 			(uuid "c1b3694a-05dd-42a0-a542-fbc2ce41a232")
 			(effects
@@ -7379,7 +7379,7 @@
 		(descr "Capacitor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C24"
-			(at 0 -1.43 90)
+			(at 2.6 0.6 90)
 			(layer "F.SilkS")
 			(uuid "d4124199-c25e-4c06-8278-c55536cfa22e")
 			(effects
@@ -13246,13 +13246,14 @@
 		)
 	)
 	(gr_text "xESC_YF_r4\nv1.0"
-		(at 257.7 107.5 0)
+		(at 248.7 111.2 0)
 		(layer "F.SilkS")
 		(uuid "e34624c6-da23-4102-a479-83e67c9c3b6a")
 		(effects
 			(font
 				(size 1 1)
-				(thickness 0.15)
+				(thickness 0.25)
+				(bold yes)
 			)
 			(justify bottom)
 		)
