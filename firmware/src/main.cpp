@@ -21,6 +21,8 @@
 #include <Arduino.h>
 #include <ezLED.h>
 
+#include <numeric>
+
 // #include "hardware/pwm.h"
 #include <FastCRC.h>
 #include <PacketSerial.h>
@@ -33,14 +35,14 @@
 #include "pins.h"
 #include "xesc_2040_datatypes.h"
 
-#define LED_ERROR_HOST_COMM led_red.blinkNumberOfTimes(50, 100, 1)
+#define LED_ERROR_HOST_COMM led_red.blinkNumberOfTimes(20, 50, 1)
 
-/*#define WRAP 3299
+// #define WRAP 3299
 
 // The current duty for the motor (-1.0 - 1.0)
 volatile float duty = 0.0;
 // The absolute value to cap the requested duty to stay within current limits
-(0.0 - 1.0) volatile float current_limit_duty = 0.0;*/
+//(0.0 - 1.0) volatile float current_limit_duty = 0.0;*/
 // The requested duty
 float duty_setpoint = 0.0;
 /*
@@ -52,9 +54,11 @@ volatile float last_duty = 1000.0f;
 */
 
 volatile uint32_t tacho = 0;
-volatile uint8_t sa_cycles = 0;  // SA cycles since last status
-volatile uint8_t last_sa_cycles = 0;
-volatile uint32_t last_status_us = 0;
+volatile uint sa_cycles = 0;  // SA cycles since last status
+
+volatile unsigned int rpm = 0;
+volatile uint32_t next_rpm_calc_millis = 0;
+volatile unsigned long last_rpm_calc_tacho = 0;
 
 volatile Xesc2040StatusPacket status = {0};
 Xesc2040SettingsPacket settings = {0};
@@ -67,7 +71,6 @@ float error_i = 0;
 
 unsigned long last_current_control_micros = 0;
 unsigned long invalid_hall_start = 0;
-unsigned long last_ramp_update_millis = 0;
 */
 volatile unsigned long last_watchdog_millis = 0;
 volatile unsigned long last_fault_millis = 0;
@@ -91,8 +94,6 @@ HardwareTimer *status_timer;
 HardwareSerial debugSerial(DEBUG_RX, DEBUG_TX);
 #endif
 
-void onPacketReceived(const uint8_t *buffer, size_t size);
-
 void sendMessage(volatile void *message, size_t size) {
     // packages need to be at least 1 byte of type, 1 byte of data and 2 bytes of
     if (size < 4) {
@@ -107,56 +108,6 @@ void sendMessage(volatile void *message, size_t size) {
     data_pointer[size - 2] = crc & 0xFF;
 
     packetSerial.send((uint8_t *)message, size);
-}
-
-void setCommutation(uint8_t step) {
-    /*if(duty == 0.0f) {
-      gpio_put_masked(0b111 << 8, 0b111 << 8);
-      pwm_set_gpio_level(PIN_UH, 0);
-      pwm_set_gpio_level(PIN_VH, 0);
-      pwm_set_gpio_level(PIN_WH, 0);
-      return;
-    }*/
-}
-
-void updateCommutation() {
-    /*
-    // check, if halls or duty changed. if not, don't update anything
-    if (last_duty == duty && last_hall == hall_sensors)
-      return;
-
-
-    // If fault, turn off motor
-    if (status.fault_code || !settings_valid)
-    {
-      setCommutation(255);
-    } else {
-      setCommutation(commutation);
-    }
-
-
-
-    if(last_hall != hall_sensors && last_commutation != 0xFF) {
-      // we got a hall tick, check direction and update tacho
-      int8_t diff = (last_commutation-1) - (commutation-1);
-      if(diff < -3) {
-        diff += 6;
-      } if(diff > 3) {
-        diff -= 6;
-      }
-      if(diff >= -3 && diff <= 3) {
-        tacho += diff;
-        tacho_absolute += abs(diff);
-        direction = diff < 0;
-      }
-      else
-      {
-        internal_error = true;
-      }
-    }
-    last_commutation = commutation;
-    last_hall = hall_sensors;
-    last_duty = duty; */
 }
 
 /*float readCurrent()
@@ -209,8 +160,9 @@ void updateFaults() {
     }*/
 
     if (faults) {
-        // We have faults, set them in the status
-        if (led_red.getState() != LED_BLINKING) led_red.blink(500, 500);
+        if (led_red.getState() != LED_BLINKING)  // Boot-up blink sequence
+            led_red.blink(500, 500);
+        led_green.turnOFF();
         status.fault_code = faults;
         last_fault_millis = millis();
     } else if (faults == 0 && status.fault_code != 0) {
@@ -219,62 +171,53 @@ void updateFaults() {
             led_red.turnOFF();
             status.fault_code = 0;
         }
+        if (duty == 0.0f)
+            led_green.turnON();
     }
 }
 
+/**
+ * @brief send_status
+ * Get called every STATUS_UPDATE_MICROS (by hardware timer)
+ */
 void send_status() {
+    uint sa_cycles_store = sa_cycles; // Buffer SA cycles as the next get counted within the next 3ms
+    sa_cycles = 0;
     status.seq++;
+    tacho += sa_cycles_store;
     updateFaults();
 
-    /* SA cycle math
+    //if (sa_cycles && duty != 0.0f)
+    if (sa_cycles_store)
+        led_green.toggle();
+    // led_green.blinkNumberOfTimes(1, 10, 1);
+
+    /* Some SA cycle infos
      *
      * My stock motor stats:
      *   Nom RPM @ 24VDC = 3488rpm = 4.3ms/SA cycle whereas 4 cycles = 360°
-     *
-     * Do math with max. RPM = 5000
-     * Shortest Cycle = 1/(5000rpm/60sec*4cycles) = 3ms
      */
-    uint32_t now = micros();
-    if (now < last_status_us) {  // overflow
-        sa_cycles = last_sa_cycles;
+    uint32_t now = millis();
+    if (now >= next_rpm_calc_millis) {
+        uint32_t diff_millis = RPM_CALC_CYCLE_MILLIS + (now - next_rpm_calc_millis);
+        next_rpm_calc_millis = now + RPM_CALC_CYCLE_MILLIS;
+        unsigned int diff_tacho = tacho - last_rpm_calc_tacho;  // FIXME: Handle overflow?!
+        last_rpm_calc_tacho = tacho;
+        rpm = (60000.0f / diff_millis) * diff_tacho / 4;
     }
-    last_status_us = now;
-    last_sa_cycles = sa_cycles;
-    tacho += sa_cycles;
 
-    DEBUG_PRINTF("%u ms, SA %i, sa_cycles (since last status) %u, tacho %u\n", millis(), digitalRead(PIN_MTR_SA), sa_cycles, tacho);
-    sa_cycles = 0;
+    DEBUG_PRINTF("now %u ms, SA %i, sa_cycles_store %u, tacho %u, RPM %u\n", now, digitalRead(PIN_MTR_SA), sa_cycles_store, tacho, rpm);
 
-    // status.duty_cycle = duty;
+    status.duty_cycle = duty;
     status.tacho = tacho;
     status.tacho_absolute = tacho;
     status.direction = 0;
 
     sendMessage(&status, sizeof(status));
+
+    if (sa_cycles_store)
+        led_green.toggle();
 }
-
-/*void InputCapture_IT_callback(void) {
-    CurrentCapture = SATimer->getCaptureCompare(sa_channel);
-    // frequency computation
-    if (CurrentCapture > LastCapture) {
-        FrequencyMeasured = input_freq / (CurrentCapture - LastCapture);
-    } else if (CurrentCapture <= LastCapture) {
-        // 0x1000 is max overflow value
-        FrequencyMeasured = input_freq / (0x10000 + CurrentCapture - LastCapture);
-    }
-    LastCapture = CurrentCapture;
-    rolloverCompareCount = 0;
-}*/
-
-/* In case of timer rollover, frequency is to low to be measured set value to 0
-   To reduce minimum frequency, it is possible to increase prescaler. But this is at a cost of precision. */
-/*void Rollover_IT_callback(void) {
-    rolloverCompareCount++;
-
-    if (rolloverCompareCount > 1) {
-        FrequencyMeasured = 0;
-    }
-}*/
 
 /* Handle SA raising edge (called by EXTI)
  * Don't waste CPU here as this ISR might get called every 3ms
@@ -283,19 +226,90 @@ void SA_ISR() {
     sa_cycles++;
 }
 
+void commitMotorState() {
+    float new_duty;
+    if (status.fault_code) {
+        new_duty = 0.0f;
+    } else {
+        new_duty = duty_setpoint;
+    }
+    if (new_duty == duty) {
+        return;
+    }
+
+    if (new_duty == 0.0f) {               // Stop motor
+        digitalWrite(PIN_MTR_RS, HIGH);   // !RS off
+        digitalWrite(PIN_MTR_BRK, HIGH);  // TODO: Release BRK after timeout?
+        // digitalWrite(PIN_VMS_IN, LOW); // TODO: Switch off once RPM=0?
+        led_green.turnON();
+    } else {                             // Start motor
+        digitalWrite(PIN_VMS_IN, HIGH);  // TODO Wire & health check result
+        digitalWrite(PIN_MTR_BRK, LOW);
+        digitalWrite(PIN_MTR_RS, LOW);  // !RS on
+        led_green.turnOFF();
+    }
+    duty = new_duty;  // FIXME: Move to BRK release or RPM measurement?
+}
+
+void onPacketReceived(const uint8_t *buffer, size_t size) {
+    // Check, if the packet is valid (1 type byte + 1 data byte + 2 bytes min)
+    if (size < 3) {
+        LED_ERROR_HOST_COMM;
+        DEBUG_PRINTLN("Packet size error");
+        return;
+    }
+
+    // Check CRC
+    uint16_t crc = CRC16.ccitt(buffer, size - 2);
+    if (buffer[size - 1] != ((crc >> 8) & 0xFF) ||
+        buffer[size - 2] != (crc & 0xFF)) {
+        LED_ERROR_HOST_COMM;
+        DEBUG_PRINTLN("Packet CRC error");
+        return;
+    }
+
+    switch (buffer[0]) {
+        case XESC2040_MSG_TYPE_CONTROL: {
+            if (size != sizeof(struct Xesc2040ControlPacket)) {
+                LED_ERROR_HOST_COMM;
+                return;
+            }
+            // Got control packet
+            last_watchdog_millis = millis();
+            Xesc2040ControlPacket *packet = (Xesc2040ControlPacket *)buffer;
+            duty_setpoint = packet->duty_cycle;
+            commitMotorState();
+        } break;
+        case XESC2040_MSG_TYPE_SETTINGS: {
+            if (size != sizeof(struct Xesc2040SettingsPacket)) {
+                settings_valid = false;
+                return;
+            }
+            Xesc2040SettingsPacket *packet = (Xesc2040SettingsPacket *)buffer;
+            settings = *packet;
+            settings_valid = true;
+        } break;
+
+        default:
+            // Wrong/unknown packet ID
+            LED_ERROR_HOST_COMM;
+            DEBUG_PRINTLN("Packet ID error");
+            break;
+    }
+}
+
 void setup() {
     DEBUG_BEGIN(DEBUG_BAUD);
     DEBUG_PRINTLN("setup()");
 
     // VM Switch
     pinMode(PIN_VMS_IN, OUTPUT);
-    //digitalWrite(PIN_VMS_IN, LOW);
-    digitalWrite(PIN_VMS_IN, HIGH);
+    // digitalWrite(PIN_VMS_IN, LOW);
+    digitalWrite(PIN_VMS_IN, HIGH);  // TODO Wire & health check
 
     // Motor
     pinMode(PIN_MTR_BRK, OUTPUT);
     digitalWrite(PIN_MTR_BRK, LOW);
-    //digitalWrite(PIN_MTR_BRK, HIGH);
     pinMode(PIN_MTR_RS, OUTPUT);
     digitalWrite(PIN_MTR_RS, HIGH);
 
@@ -317,17 +331,10 @@ void setup() {
 
     // --- old
 
-    /*
-
-    last_commutation = 0xFF;*/
-
-    /*
-    analogReadResolution(12);*/
+    // last_commutation = 0xFF;
+    // analogReadResolution(12);
 
     // Comms UART
-
-    //SYSCFG->CFGR1 |= 0b11000;  // Remap PA12 to PA10 and PA11 to PA9
-                               // RCC_APBENR2.SYSCFGEN;
     PACKET_SERIAL.begin(115200);
     packetSerial.setStream(&PACKET_SERIAL);
     packetSerial.setPacketHandler(&onPacketReceived);
@@ -386,91 +393,19 @@ VIN_R2);
 }
 */
 
-void onPacketReceived(const uint8_t *buffer, size_t size) {
-    // Check, if the packet is valid (1 type byte + 1 data byte + 2 bytes min)
-    if (size < 3) {
-        LED_ERROR_HOST_COMM;
-        return;
-    }
-
-    // Check CRC
-    uint16_t crc = CRC16.ccitt(buffer, size - 2);
-    if (buffer[size - 1] != ((crc >> 8) & 0xFF) ||
-        buffer[size - 2] != (crc & 0xFF)) {
-        LED_ERROR_HOST_COMM;
-        return;
-    }
-
-    switch (buffer[0]) {
-        case XESC2040_MSG_TYPE_CONTROL: {
-            if (size != sizeof(struct Xesc2040ControlPacket)) {
-                LED_ERROR_HOST_COMM;
-                return;
-            }
-            // Got control packet
-            last_watchdog_millis = millis();
-            Xesc2040ControlPacket *packet = (Xesc2040ControlPacket *)buffer;
-            duty_setpoint = packet->duty_cycle;
-        } break;
-        case XESC2040_MSG_TYPE_SETTINGS: {
-            if (size != sizeof(struct Xesc2040SettingsPacket)) {
-                settings_valid = false;
-                return;
-            }
-            Xesc2040SettingsPacket *packet = (Xesc2040SettingsPacket *)buffer;
-            settings = *packet;
-            settings_valid = true;
-        } break;
-
-        default:
-            // Wrong/unknown packet ID
-            LED_ERROR_HOST_COMM;
-            break;
-    }
-}
-
 void loop() {
-    static uint32_t test = millis();
-
     led_green.loop();
     led_red.loop();
+    commitMotorState();
 
-    // DEBUG_PRINTF("SA %i\n", digitalRead(PIN_MTR_SA));
-    //DEBUG_PRINTF("SA %i, tacho %u\n", digitalRead(PIN_MTR_SA), tacho);
-    //  DEBUG_PRINTF("SA %i, Frequency %u\n", digitalRead(PIN_MTR_SA), FrequencyMeasured);
-
-    if ((millis() - test >= 10000)) {
-        test = millis();
-        DEBUG_PRINTF("Toggle Motor\n");
-        //digitalToggle(PIN_MTR_RS);
-
-        //digitalToggle(PIN_VMS_IN);
-    }
+    // Green LED
+    /*if (status.fault_code != 0 && duty == 0.0f) {
+      led_green.turnON();
+    } else {
+      led_green
+    }*/
 
     /*
-
-  // We need to ramp the duty cycle
-  if (millis() - last_ramp_update_millis > 10)
-  {
-    float dt = (float)(millis() - last_ramp_update_millis) / 1000.0f;
-    last_ramp_update_millis = millis();
-    if(status.fault_code) {
-      duty_setpoint_ramped = 0.0;
-    } else if (duty_setpoint != duty_setpoint_ramped)
-    {
-      if (duty_setpoint > duty_setpoint_ramped)
-      {
-        duty_setpoint_ramped = min(duty_setpoint, duty_setpoint_ramped +
-  settings.acceleration * dt);
-      }
-      else
-      {
-        duty_setpoint_ramped = max(duty_setpoint, duty_setpoint_ramped -
-  settings.acceleration * dt);
-      }
-    }
-  }
-
   switch (analog_round_robin)
   {
   case 0:
@@ -490,5 +425,6 @@ void loop() {
 
   analog_round_robin = (analog_round_robin + 1) % 4;
   */
+
     packetSerial.update();
 }

@@ -79,8 +79,10 @@ To get a local copy up and running follow these simple example steps.
 <table>
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
   <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
-  <tr><td></td><td>blink (1Hz)</td><td>Motor/Controller Fault. Check ESC's status in mower/status to see error status code</td></tr>
+  <tr><td>on</td><td></td><td>Ready and connected by xesc_ros</td></tr>
+  <tr><td></td><td>blink (1Hz)</td><td>Waiting for OpenMower (xesc_ros driver connect) or Motor/Controller Fault. Check ESC's status via `rostopic echo  /mower/status` error code</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
+  <tr><td></td><td>on</td><td>Wrong ROS driver, which result in mass packet size or CRC errors, which in turn look like 'Red=on'</td></tr>
 </table>
 
 
@@ -135,13 +137,13 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 - [ ] Firmware 
     - [x] Generic VM control (on/off)
     - [x] Generic motor control (start, stop, break)
-    - [ ] Read SA, math RPM
+    - [x] Read SA, math RPM
     - [ ] Open VMC detection
     - [ ] Motor current consumption
     - [ ] Stock motor (wrong) cabling detection
     - [ ] STM32 bootloader / flash via UART support
 - [ ] ROS driver
-    - [ ] ???
+    - [ ] xesc_ros::xesc_yfr4
 
 See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/issues) for a full list of proposed features (and known issues).
 

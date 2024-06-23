@@ -14,13 +14,16 @@
 #define MIN_FAULT_TIME_MILLIS 2000
 
 #define NUM_SA_CYCLES_PER_TURN 4
+#define SIZE_SA_CYCLE_BUFFER 8  // Best chose multiple of ^2
+#define CYCLE_BUF_SUM_TO_RPM_MULTIPLIER (60000UL / (STATUS_UPDATE_MICROS / 1000) * SIZE_SA_CYCLE_BUFFER)
+
+#define RPM_CALC_CYCLE_MILLIS 200 // How often to calc RPMs. Need to be high enough to catch enough SA cycles
 
 // old
 
 // Hardware limits before going into fault
 #define HW_LIMIT_PCB_TEMP 80.0
 #define HW_LIMIT_MOTOR_TEMP 80.0
-
 
 // Max amps before shutting down
 #define HW_LIMIT_CURRENT 1.5
@@ -29,11 +32,9 @@
 #define CURRENT_P 50.0f
 #define CURRENT_I 150.1f
 
-
 // Hardware limit for undervoltage and overvoltage.
 #define HW_LIMIT_VLOW 12.0
 #define HW_LIMIT_VHIGH 40.0
-
 
 // Values for the voltage sensing resistor divider
 #define VIN_R1 22000.0f
@@ -47,4 +48,3 @@
 
 // Max duty cycle to allow. This can't be 1, because the gate driver doesn't allow that for some reason.
 #define MAX_DUTY_CYCLE 0.95f
-
