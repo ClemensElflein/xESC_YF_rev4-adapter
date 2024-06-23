@@ -47,7 +47,7 @@ and use OM's xESC.
 But it's somehow "crafted" and you need to be capable to do these things.
 
 As an alternative, this "Adapter" is thought to replace OM's default Mow- xESC.<br>
-In addition to this adapter, it's still **required to exchange two cables of the mow motor cabling**. But this should be also possible for the untalented, by cutting the two relevant wires, and use two luster terminals to cross them.
+In addition to this adapter, it's nevertheless **required to exchange two cables of the mow motor cabling**. But this should be also possible for the untalented (see [Requirements](#requirements)).
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -69,6 +69,13 @@ In addition to this adapter, it's still **required to exchange two cables of the
 > [!WARNING]  
 > This project is in **early development state** and not usable in any way at the moment!
 
+## Requirements
+
+It's mandatory to cross the green and black mow-motor-cable.
+Either exchange the pins within the plug, or do it the lazy way like me, with a luster terminal:
+[![Mandatory Hardware Modification](assets/cross-gn-bk.jpg "Open in browser")](assets/cross-gn-bk.jpg)
+The latter has the advantage that you immediately see that you already crossed green/black.
+
 <!--
 This is an example of how you may give instructions on setting up your project locally.
 To get a local copy up and running follow these simple example steps.
@@ -80,6 +87,7 @@ To get a local copy up and running follow these simple example steps.
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
   <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
   <tr><td>on</td><td></td><td>Ready and connected by xesc_ros</td></tr>
+  <tr><td>flash</td><td></td><td>SA tacho flash for 90° rotation</td></tr>
   <tr><td></td><td>blink (1Hz)</td><td>Waiting for OpenMower (xesc_ros driver connect) or Motor/Controller Fault. Check ESC's status via `rostopic echo  /mower/status` error code</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
   <tr><td></td><td>on</td><td>Wrong ROS driver, which result in mass packet size or CRC errors, which in turn look like 'Red=on'</td></tr>

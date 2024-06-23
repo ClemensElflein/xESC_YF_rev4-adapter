@@ -160,19 +160,22 @@ void updateFaults() {
     }*/
 
     if (faults) {
-        if (led_red.getState() != LED_BLINKING)  // Boot-up blink sequence
+        if (led_red.getState() != LED_BLINKING)  // Boot-up blink sequence FIXME: Ugly
             led_red.blink(500, 500);
-        led_green.turnOFF();
+        if (led_green.getState() != LED_BLINKING)  // Boot-up blink sequence FIXME: Ugly
+            led_green.turnOFF();
         status.fault_code = faults;
         last_fault_millis = millis();
-    } else if (faults == 0 && status.fault_code != 0) {
-        // Reset faults only if MIN_FAULT_TIME_MILLIS passed, or if it was a dedicated watchdog fault
-        if (millis() - last_fault_millis > MIN_FAULT_TIME_MILLIS || status.fault_code == FAULT_WATCHDOG) {
-            led_red.turnOFF();
-            status.fault_code = 0;
-        }
-        if (duty == 0.0f)
+    } else if (faults == 0) {
+        if (led_green.getState() != LED_BLINKING)  // SA cycle blink sequence FIXME: Ugly
             led_green.turnON();
+        if (status.fault_code != 0) {
+            // Reset faults only if MIN_FAULT_TIME_MILLIS passed, or if it was a dedicated watchdog fault
+            if (millis() - last_fault_millis > MIN_FAULT_TIME_MILLIS || status.fault_code == FAULT_WATCHDOG) {
+                led_red.turnOFF();
+                status.fault_code = 0;
+            }
+        }
     }
 }
 
@@ -181,16 +184,14 @@ void updateFaults() {
  * Get called every STATUS_UPDATE_MICROS (by hardware timer)
  */
 void send_status() {
-    uint sa_cycles_store = sa_cycles; // Buffer SA cycles as the next get counted within the next 3ms
+    uint sa_cycles_bak = sa_cycles;  // Buffer SA cycles as the next get counted within the next 3ms
     sa_cycles = 0;
     status.seq++;
-    tacho += sa_cycles_store;
+    tacho += sa_cycles_bak;
     updateFaults();
 
-    //if (sa_cycles && duty != 0.0f)
-    if (sa_cycles_store)
-        led_green.toggle();
-    // led_green.blinkNumberOfTimes(1, 10, 1);
+    if (sa_cycles_bak && led_green.getState() != LED_BLINKING)  // Boot-up blink sequence FIXME: Ugly
+        led_green.blinkNumberOfTimes(20, 20, 1);                // FIXME: To fast @ full speed
 
     /* Some SA cycle infos
      *
@@ -206,7 +207,7 @@ void send_status() {
         rpm = (60000.0f / diff_millis) * diff_tacho / 4;
     }
 
-    DEBUG_PRINTF("now %u ms, SA %i, sa_cycles_store %u, tacho %u, RPM %u\n", now, digitalRead(PIN_MTR_SA), sa_cycles_store, tacho, rpm);
+    DEBUG_PRINTF("now %u ms, SA %i, sa_cycles_bak %u, tacho %u, RPM %u\n", now, digitalRead(PIN_MTR_SA), sa_cycles_bak, tacho, rpm);
 
     status.duty_cycle = duty;
     status.tacho = tacho;
@@ -214,9 +215,6 @@ void send_status() {
     status.direction = 0;
 
     sendMessage(&status, sizeof(status));
-
-    if (sa_cycles_store)
-        led_green.toggle();
 }
 
 /* Handle SA raising edge (called by EXTI)
@@ -241,12 +239,10 @@ void commitMotorState() {
         digitalWrite(PIN_MTR_RS, HIGH);   // !RS off
         digitalWrite(PIN_MTR_BRK, HIGH);  // TODO: Release BRK after timeout?
         // digitalWrite(PIN_VMS_IN, LOW); // TODO: Switch off once RPM=0?
-        led_green.turnON();
     } else {                             // Start motor
         digitalWrite(PIN_VMS_IN, HIGH);  // TODO Wire & health check result
         digitalWrite(PIN_MTR_BRK, LOW);
         digitalWrite(PIN_MTR_RS, LOW);  // !RS on
-        led_green.turnOFF();
     }
     duty = new_duty;  // FIXME: Move to BRK release or RPM measurement?
 }
