@@ -1,7 +1,7 @@
 #pragma once
 
 // Define to stream debug messages via UART
-#define DEBUG_SERIAL debugSerial
+//#define DEBUG_SERIAL debugSerial
 #define DEBUG_BAUD 460800UL
 
 #define PACKET_SERIAL hostSerial
@@ -14,10 +14,7 @@
 #define MIN_FAULT_TIME_MILLIS 2000
 
 #define NUM_SA_CYCLES_PER_TURN 4
-#define SIZE_SA_CYCLE_BUFFER 8  // Best chose multiple of ^2
-#define CYCLE_BUF_SUM_TO_RPM_MULTIPLIER (60000UL / (STATUS_UPDATE_MICROS / 1000) * SIZE_SA_CYCLE_BUFFER)
-
-#define RPM_CALC_CYCLE_MILLIS 200 // How often to calc RPMs. Need to be high enough to catch enough SA cycles
+#define RPM_CALC_CYCLE_MILLIS 200  // How often to calc RPMs. Need to be high enough to catch enough SA cycles
 
 // old
 

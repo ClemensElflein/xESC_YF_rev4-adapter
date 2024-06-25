@@ -33,7 +33,7 @@
 // #include "hardware/dma.h"
 // #include "hardware/watchdog.h"*/
 #include "pins.h"
-#include "xesc_2040_datatypes.h"
+#include "xesc_yfr4_datatypes.h"
 
 #define LED_ERROR_HOST_COMM led_red.blinkNumberOfTimes(20, 50, 1)
 
@@ -45,13 +45,8 @@ volatile float duty = 0.0;
 //(0.0 - 1.0) volatile float current_limit_duty = 0.0;*/
 // The requested duty
 float duty_setpoint = 0.0;
-/*
-// init with invalid hall so we have to update
-volatile uint last_hall = 0xFF;
-volatile uint last_commutation = 0xFF;
 // init with out of range duty, so we have to update
-volatile float last_duty = 1000.0f;
-*/
+// volatile float last_duty = 1000.0f;
 
 volatile uint32_t tacho = 0;
 volatile uint sa_cycles = 0;  // SA cycles since last status
@@ -60,17 +55,15 @@ volatile unsigned int rpm = 0;
 volatile uint32_t next_rpm_calc_millis = 0;
 volatile unsigned long last_rpm_calc_tacho = 0;
 
-volatile Xesc2040StatusPacket status = {0};
-Xesc2040SettingsPacket settings = {0};
+XescYFR4StatusPacket status = {0};
+XescYFR4SettingsPacket settings = {0};
 bool settings_valid = false;
 
 /*
-bool invalid_hall = false;
 bool internal_error = false;
 float error_i = 0;
 
 unsigned long last_current_control_micros = 0;
-unsigned long invalid_hall_start = 0;
 */
 volatile unsigned long last_watchdog_millis = 0;
 volatile unsigned long last_fault_millis = 0;
@@ -86,15 +79,11 @@ ezLED led_red(PIN_LED_RED, CTRL_ANODE);
 
 HardwareTimer *status_timer;
 
-// volatile uint32_t FrequencyMeasured, LastCapture = 0, CurrentCapture;
-// uint32_t input_freq = 0;
-// volatile uint32_t rolloverCompareCount = 0;
-
 #ifdef DEBUG_SERIAL
 HardwareSerial debugSerial(DEBUG_RX, DEBUG_TX);
 #endif
 
-void sendMessage(volatile void *message, size_t size) {
+void sendMessage(void *message, size_t size) {
     // packages need to be at least 1 byte of type, 1 byte of data and 2 bytes of
     if (size < 4) {
         LED_ERROR_HOST_COMM;
@@ -190,9 +179,6 @@ void send_status() {
     tacho += sa_cycles_bak;
     updateFaults();
 
-    if (sa_cycles_bak && led_green.getState() != LED_BLINKING)  // Boot-up blink sequence FIXME: Ugly
-        led_green.blinkNumberOfTimes(20, 20, 1);                // FIXME: To fast @ full speed
-
     /* Some SA cycle infos
      *
      * My stock motor stats:
@@ -212,7 +198,6 @@ void send_status() {
     status.duty_cycle = duty;
     status.tacho = tacho;
     status.tacho_absolute = tacho;
-    status.direction = 0;
 
     sendMessage(&status, sizeof(status));
 }
@@ -251,7 +236,6 @@ void onPacketReceived(const uint8_t *buffer, size_t size) {
     // Check, if the packet is valid (1 type byte + 1 data byte + 2 bytes min)
     if (size < 3) {
         LED_ERROR_HOST_COMM;
-        DEBUG_PRINTLN("Packet size error");
         return;
     }
 
@@ -260,36 +244,35 @@ void onPacketReceived(const uint8_t *buffer, size_t size) {
     if (buffer[size - 1] != ((crc >> 8) & 0xFF) ||
         buffer[size - 2] != (crc & 0xFF)) {
         LED_ERROR_HOST_COMM;
-        DEBUG_PRINTLN("Packet CRC error");
         return;
     }
 
     switch (buffer[0]) {
-        case XESC2040_MSG_TYPE_CONTROL: {
-            if (size != sizeof(struct Xesc2040ControlPacket)) {
+        case XESCYFR4_MSG_TYPE_CONTROL: {
+            if (size != sizeof(struct XescYFR4ControlPacket)) {
                 LED_ERROR_HOST_COMM;
                 return;
             }
             // Got control packet
             last_watchdog_millis = millis();
-            Xesc2040ControlPacket *packet = (Xesc2040ControlPacket *)buffer;
+            XescYFR4ControlPacket *packet = (XescYFR4ControlPacket *)buffer;
             duty_setpoint = packet->duty_cycle;
             commitMotorState();
         } break;
-        case XESC2040_MSG_TYPE_SETTINGS: {
-            if (size != sizeof(struct Xesc2040SettingsPacket)) {
+        case XESCYFR4_MSG_TYPE_SETTINGS: {
+            if (size != sizeof(struct XescYFR4SettingsPacket)) {
                 settings_valid = false;
+                LED_ERROR_HOST_COMM;
                 return;
             }
-            Xesc2040SettingsPacket *packet = (Xesc2040SettingsPacket *)buffer;
+            XescYFR4SettingsPacket *packet = (XescYFR4SettingsPacket *)buffer;
             settings = *packet;
             settings_valid = true;
         } break;
 
         default:
-            // Wrong/unknown packet ID
+            // Wrong/unknown packet type
             LED_ERROR_HOST_COMM;
-            DEBUG_PRINTLN("Packet ID error");
             break;
     }
 }
@@ -313,27 +296,27 @@ void setup() {
     pinMode(PIN_MTR_SA, INPUT_FLOATING);
     attachInterrupt(PIN_MTR_SA, SA_ISR, RISING);
 
+    // Host comms
+    PACKET_SERIAL.begin(115200);
+    packetSerial.setStream(&PACKET_SERIAL);
+    packetSerial.setPacketHandler(&onPacketReceived);
+
     // We've hardware timer on mass, no need to count millis() by hand
     status_timer = new HardwareTimer(TIMER_STATUS);
     status_timer->setOverflow(STATUS_UPDATE_MICROS, MICROSEC_FORMAT);
     status_timer->attachInterrupt(send_status);
     status_timer->resume();
 
-    status.message_type = XESC2040_MSG_TYPE_STATUS;
+    status.message_type = XESCYFR4_MSG_TYPE_STATUS;
     status.fw_version_major = 0;
-    status.fw_version_minor = 10;
+    status.fw_version_minor = 1;
+    status.direction = 0;  // Our motor has only one direction
 
     // Already initialized
 
     // --- old
 
-    // last_commutation = 0xFF;
     // analogReadResolution(12);
-
-    // Comms UART
-    PACKET_SERIAL.begin(115200);
-    packetSerial.setStream(&PACKET_SERIAL);
-    packetSerial.setPacketHandler(&onPacketReceived);
 
     // LED blink code "Boot up successful"
     led_green.blinkNumberOfTimes(200, 200, 3);  // 50ms ON, 200ms OFF, repeat 3 times, blink immediately
