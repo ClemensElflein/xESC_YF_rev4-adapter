@@ -53,21 +53,11 @@ In addition to this adapter, it's nevertheless **required to exchange two cables
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
-### Built With
-
-* [![PlatformIO][PlatformIO-shield]][PlatformIO-url]
-* ![KiCad Badge](https://img.shields.io/badge/KiCad-314CB0?logo=kicad&logoColor=fff&style=plastic)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
 <!-- GETTING STARTED -->
 ## Getting Started
 
 > [!WARNING]  
-> This project is in **early development state** and not usable in any way at the moment!
+> This project is in **early development state** and only generics like start, stop & break do work!
 
 ## Requirements
 
@@ -87,7 +77,7 @@ To get a local copy up and running follow these simple example steps.
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
   <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
   <tr><td>on</td><td></td><td>Ready and connected by xesc_ros</td></tr>
-  <tr><td>flash</td><td></td><td>SA tacho flash for 90° rotation</td></tr>
+  <!-- <tr><td>flash</td><td></td><td>SA tacho flash for 90° rotation</td></tr> -->
   <tr><td></td><td>blink (1Hz)</td><td>Waiting for OpenMower (xesc_ros driver connect) or Motor/Controller Fault. Check ESC's status via `rostopic echo  /mower/status` error code</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
   <tr><td></td><td>on</td><td>Wrong ROS driver, which result in mass packet size or CRC errors, which in turn look like 'Red=on'</td></tr>
@@ -150,8 +140,8 @@ _For more examples, please refer to the [Documentation](https://example.com)_
     - [ ] Motor current consumption
     - [ ] Stock motor (wrong) cabling detection
     - [ ] STM32 bootloader / flash via UART support
-- [ ] ROS driver
-    - [ ] xesc_ros::xesc_yfr4
+- [x] ROS driver
+    - [x] xesc_ros::xesc_yfr4
 
 See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/issues) for a full list of proposed features (and known issues).
 
