@@ -58,6 +58,11 @@ jobs:
       - name: Create firmware zip
         run: zip -r release/firmware_xesc-yf-rev4.zip firmware
 
+      - name: Calculating checksum
+        shell: bash
+        run: |
+          sha256sum release/firmware_xesc-yf-rev4.zip > release/firmware_xesc-yf-rev4.sha256
+
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -89,7 +94,7 @@ jobs:
   pre-release-latest-firmware:
     runs-on: ubuntu-latest
     if: github.ref_type != 'tag'
-    needs: [firmware]
+    needs: firmware
     steps:
       - uses: actions/checkout@v4
         with:
@@ -103,11 +108,16 @@ jobs:
       - name: Create firmware zip
         run: zip -r firmware_xesc-yf-rev4.zip firmware
 
+      - name: Calculating checksum
+        shell: bash
+        run: |
+          sha256sum firmware_xesc-yf-rev4.zip > firmware_xesc-yf-rev4.sha256
+
       - uses: "marvinpinto/action-automatic-releases@latest"
+        if: github.event_name != 'pull_request'
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           title: "Latest Firmware"
           automatic_release_tag: "latest"
           prerelease: true
-          files: |
-            firmware_xesc-yf-rev4.zip
+          files: firmware_xesc-yf-rev4.{sha256,zip}
