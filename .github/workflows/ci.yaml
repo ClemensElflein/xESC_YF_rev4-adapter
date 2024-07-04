@@ -44,8 +44,8 @@ jobs:
           fetch-depth: 0
       - uses: INTI-CMNB/KiBot@v2_k8
         with:
-          config: PCB/xESC_YF_r4.kibot.kibot.yaml
-          board: PCB/xESC_YF_r4.kibot.kicad_pcb
+          config: PCB/xESC_YF_r4.kibot.yaml
+          board: PCB/xESC_YF_r4.kicad_pcb
 
       - name: 'Fix permissions on release/'
         run: sudo chmod 0777 release

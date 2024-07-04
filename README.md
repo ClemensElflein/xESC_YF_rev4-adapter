@@ -80,7 +80,7 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ## Installation
 
-1. Download and unzip the firmware from [Releases](/releases) section (see/open 'Assets')
+1. The compiled firmware can be found in the [Actions](/actions) section. Click the one you're intersted in (newest or tagged), scroll down to 'Artifacts', download and unzip. 
 2. Connect your ST-Link probe to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
 3. Flash the adapter:
    ```sh
