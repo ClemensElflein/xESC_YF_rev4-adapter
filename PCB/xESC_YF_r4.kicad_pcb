@@ -134,7 +134,7 @@
 	(net 12 "+3V3")
 	(net 13 "+5V")
 	(net 14 "unconnected-(U5-NC-Pad4)")
-	(net 15 "/Level Shifter 1/SIGNAL_HV")
+	(net 15 "Net-(Q1-D)")
 	(net 16 "/VMS")
 	(net 17 "/SWDIO")
 	(net 18 "/SWCLK")
@@ -930,10 +930,10 @@
 			)
 		)
 		(property ki_fp_filters "R_*")
-		(path "/5bbaf6ba-89a5-4b68-9a72-e9da831f147d/00000000-0000-0000-0000-0000613371be")
-		(sheetname "Level Shifter 1")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
-		(attr smd)
+		(path "/d6bbe8f9-88d9-4c69-845c-fc2a88a10c14")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
+		(attr smd exclude_from_bom dnp)
 		(fp_line
 			(start -0.227064 -0.735)
 			(end 0.227064 -0.735)
@@ -1059,7 +1059,7 @@
 			(size 1.2 1.4)
 			(layers "F.Cu" "F.Paste" "F.Mask")
 			(roundrect_rratio 0.208333)
-			(net 15 "/Level Shifter 1/SIGNAL_HV")
+			(net 15 "Net-(Q1-D)")
 			(pintype "passive")
 			(uuid "23d58c8b-8f68-449a-9af4-c78c8500d226")
 		)
@@ -1092,7 +1092,7 @@
 				)
 			)
 		)
-		(property "Value" "150R"
+		(property "Value" "220"
 			(at 0 1.43 90)
 			(layer "F.Fab")
 			(uuid "c5971609-1e03-459a-b47d-6d5a6b743241")
@@ -1139,7 +1139,7 @@
 				)
 			)
 		)
-		(property "Stock_PN" "R-603-150-.1W-1%"
+		(property "Stock_PN" "R-603-220-.1W-1%"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -1152,7 +1152,7 @@
 				)
 			)
 		)
-		(property "Digikey" "311-150HRCT-ND"
+		(property "Digikey" "311-220HRCT-ND"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -1165,7 +1165,7 @@
 				)
 			)
 		)
-		(property "Part Number" "RC0603FR-07150RL"
+		(property "Part Number" "RC0603FR-07220RL"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -1857,7 +1857,7 @@
 		(descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R12"
-			(at -2.8 0.05 -90)
+			(at 2.7 0.05 -90)
 			(layer "F.SilkS")
 			(uuid "cda5daa6-0f97-4f1e-a75b-1e63c8ac4de3")
 			(effects
@@ -2355,7 +2355,7 @@
 		(descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R14"
-			(at 2.9 0.1 90)
+			(at -2.7 -0.1 90)
 			(layer "F.SilkS")
 			(uuid "de34bf7b-14ce-41ad-9f2b-726648d1ad4d")
 			(effects
@@ -3000,10 +3000,10 @@
 			)
 		)
 		(property ki_fp_filters "SOT?23*")
-		(path "/739326a9-1427-40fa-8f5d-e6e5916a6e86/00000000-0000-0000-0000-0000613371aa")
-		(sheetname "Level Shifter 3")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
-		(attr smd)
+		(path "/9354cd64-4b48-4732-b946-f8a92bb0d41d")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
+		(attr smd exclude_from_bom dnp)
 		(fp_line
 			(start 0 -1.56)
 			(end -0.65 -1.56)
@@ -3423,7 +3423,7 @@
 			(size 0.8 0.95)
 			(layers "F.Cu" "F.Paste" "F.Mask")
 			(roundrect_rratio 0.25)
-			(net 15 "/Level Shifter 1/SIGNAL_HV")
+			(net 15 "Net-(Q1-D)")
 			(pintype "passive")
 			(uuid "102f7bd1-febe-4b6d-975c-9e185b911b32")
 		)
@@ -4098,10 +4098,10 @@
 			)
 		)
 		(property ki_fp_filters "R_*")
-		(path "/739326a9-1427-40fa-8f5d-e6e5916a6e86/00000000-0000-0000-0000-0000613371be")
-		(sheetname "Level Shifter 3")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
-		(attr smd)
+		(path "/d17a177f-af34-47c9-ac4e-989e38b5be93")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
+		(attr smd exclude_from_bom dnp)
 		(fp_line
 			(start -0.227064 0.735)
 			(end 0.227064 0.735)
@@ -4360,9 +4360,9 @@
 			)
 		)
 		(property ki_fp_filters "R_*")
-		(path "/6c30c4a6-f45e-4973-805e-f4bcd47141dd/00000000-0000-0000-0000-0000613371be")
-		(sheetname "Level Shifter 2")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
+		(path "/f4ea534d-2699-465a-a0da-3c2529fffca4")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.227064 0.735)
@@ -4858,9 +4858,9 @@
 			)
 		)
 		(property ki_fp_filters "R_*")
-		(path "/6c30c4a6-f45e-4973-805e-f4bcd47141dd/00000000-0000-0000-0000-0000613371b4")
-		(sheetname "Level Shifter 2")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
+		(path "/05dc4b7e-41d1-42e3-8465-233c7c6e9826")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.227064 0.735)
@@ -5653,10 +5653,10 @@
 			)
 		)
 		(property ki_fp_filters "R_*")
-		(path "/739326a9-1427-40fa-8f5d-e6e5916a6e86/00000000-0000-0000-0000-0000613371b4")
-		(sheetname "Level Shifter 3")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
-		(attr smd)
+		(path "/b9a49ad0-1d71-45da-9115-a78663bf3e5c")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
+		(attr smd exclude_from_bom dnp)
 		(fp_line
 			(start -0.227064 0.735)
 			(end 0.227064 0.735)
@@ -6313,7 +6313,7 @@
 				)
 			)
 		)
-		(property "Value" "150R"
+		(property "Value" "220"
 			(at 0 1.43 90)
 			(layer "F.Fab")
 			(uuid "776c1416-0b4d-4b6b-ad8b-c62b8b1ceb1f")
@@ -6360,7 +6360,7 @@
 				)
 			)
 		)
-		(property "Stock_PN" "R-603-150-.1W-1%"
+		(property "Stock_PN" "R-603-220-.1W-1%"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6373,7 +6373,7 @@
 				)
 			)
 		)
-		(property "Digikey" "311-150HRCT-ND"
+		(property "Digikey" "311-220HRCT-ND"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6386,7 +6386,7 @@
 				)
 			)
 		)
-		(property "Part Number" "RC0603FR-07150RL"
+		(property "Part Number" "RC0603FR-07220RL"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6562,7 +6562,7 @@
 				)
 			)
 		)
-		(property "Value" "1k"
+		(property "Value" "47k"
 			(at 0 1.65 90)
 			(layer "F.Fab")
 			(uuid "00960bc6-87b6-4b25-b845-f728f29ec89e")
@@ -6609,7 +6609,7 @@
 				)
 			)
 		)
-		(property "Stock_PN" "R-805-1K-.125W-1%"
+		(property "Stock_PN" "R-805-47K-.125W-1%"
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6622,7 +6622,7 @@
 				)
 			)
 		)
-		(property "Digikey" "311-1.00KCRCT-ND"
+		(property "Digikey" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6635,7 +6635,7 @@
 				)
 			)
 		)
-		(property "Part Number" "RC0805FR-071KL"
+		(property "Part Number" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6648,7 +6648,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C95781"
+		(property "LCSC" ""
 			(at 0 0 -90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -6662,9 +6662,9 @@
 			)
 		)
 		(property ki_fp_filters "R_*")
-		(path "/5bbaf6ba-89a5-4b68-9a72-e9da831f147d/00000000-0000-0000-0000-0000613371b4")
-		(sheetname "Level Shifter 1")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
+		(path "/2cdf6b51-12c9-4170-a4b1-647fca50c8b8")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.227064 0.735)
@@ -6924,9 +6924,9 @@
 			)
 		)
 		(property ki_fp_filters "SOT?23*")
-		(path "/6c30c4a6-f45e-4973-805e-f4bcd47141dd/00000000-0000-0000-0000-0000613371aa")
-		(sheetname "Level Shifter 2")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
+		(path "/a5e30ad1-bcbc-4a50-9c76-605150221249")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0 -1.56)
@@ -7130,7 +7130,7 @@
 		(descr "Resistor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "resistor")
 		(property "Reference" "R13"
-			(at 0 1.2 90)
+			(at -2.7 0 90)
 			(layer "F.SilkS")
 			(uuid "c1b3694a-05dd-42a0-a542-fbc2ce41a232")
 			(effects
@@ -7379,7 +7379,7 @@
 		(descr "Capacitor SMD 0603 (1608 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
 		(tags "capacitor")
 		(property "Reference" "C24"
-			(at 0 -1.43 90)
+			(at 2.6 0.6 90)
 			(layer "F.SilkS")
 			(uuid "d4124199-c25e-4c06-8278-c55536cfa22e")
 			(effects
@@ -7987,9 +7987,9 @@
 			)
 		)
 		(property ki_fp_filters "SOT?23*")
-		(path "/5bbaf6ba-89a5-4b68-9a72-e9da831f147d/00000000-0000-0000-0000-0000613371aa")
-		(sheetname "Level Shifter 1")
-		(sheetfile "LEVEL_SHIFTER.kicad_sch")
+		(path "/ae7738b3-b14e-4639-84b1-65f712f22a29")
+		(sheetname "Stammblatt")
+		(sheetfile "xESC_YF_r4.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0 -1.56)
@@ -8169,7 +8169,7 @@
 			(size 1.475 0.6)
 			(layers "F.Cu" "F.Paste" "F.Mask")
 			(roundrect_rratio 0.25)
-			(net 15 "/Level Shifter 1/SIGNAL_HV")
+			(net 15 "Net-(Q1-D)")
 			(pinfunction "D")
 			(pintype "passive")
 			(uuid "ec46f36d-2eed-4892-8495-8a4d222edca8")
@@ -13246,13 +13246,14 @@
 		)
 	)
 	(gr_text "xESC_YF_r4\nv1.0"
-		(at 257.7 107.5 0)
+		(at 248.7 111.2 0)
 		(layer "F.SilkS")
 		(uuid "e34624c6-da23-4102-a479-83e67c9c3b6a")
 		(effects
 			(font
 				(size 1 1)
-				(thickness 0.15)
+				(thickness 0.25)
+				(bold yes)
 			)
 			(justify bottom)
 		)

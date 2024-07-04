@@ -1,0 +1,123 @@
+name: CI
+
+on: [push]
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+
+      - name: Run PlatformIO
+        run: pio run -d firmware
+
+      - name: Copy Artifacts
+        run: |
+          mkdir artifacts/
+          cp firmware/.pio/build/STM32C011F6_V1x/firmware.bin ./artifacts/firmware_xesc_yf_rev4.bin
+
+      - name: Step 3 - Use the Upload Artifact GitHub Action
+        uses: actions/upload-artifact@v4
+        with:
+          name: Firmware-xESC-YardForce-Rev4
+          path: artifacts/
+
+  tagged-release:
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    needs: [firmware]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: INTI-CMNB/KiBot@v2_k8
+        with:
+          config: PCB/xESC_YF_r4.kibot.kibot.yaml
+          board: PCB/xESC_YF_r4.kibot.kicad_pcb
+
+      - name: 'Fix permissions on release/'
+        run: sudo chmod 0777 release
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Firmware-xESC-YardForce-Rev4
+          path: firmware
+
+      - name: Create firmware zip
+        run: zip -r release/firmware_xesc-yf-rev4.zip firmware
+
+      - name: Calculating checksum
+        shell: bash
+        run: |
+          sha256sum release/firmware_xesc-yf-rev4.zip > release/firmware_xesc-yf-rev4.sha256
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: release/*
+
+      - name: Deploy release
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: release
+          destination_dir: release
+
+      - name: Deploy release_navigator
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: release_navigator
+          destination_dir: release_navigator
+          keep_files: true
+
+      - name: Deploy release_navigator index
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: release_navigator
+          keep_files: true
+
+  pre-release-latest-firmware:
+    runs-on: ubuntu-latest
+    if: github.ref_type != 'tag'
+    needs: firmware
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Firmware-xESC-YardForce-Rev4
+          path: firmware
+
+      - name: Create firmware zip
+        run: zip -r firmware_xesc-yf-rev4.zip firmware
+
+      - name: Calculating checksum
+        shell: bash
+        run: |
+          sha256sum firmware_xesc-yf-rev4.zip > firmware_xesc-yf-rev4.sha256
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        if: github.event_name != 'pull_request'
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          title: "Latest Firmware"
+          automatic_release_tag: "latest"
+          prerelease: true
+          files: firmware_xesc-yf-rev4.{sha256,zip}
