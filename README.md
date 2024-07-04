@@ -84,7 +84,7 @@ The latter has the advantage that you immediately see that you already crossed g
 2. Connect your ST-Link probe to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
 3. Flash the adapter:
    ```sh
-   st-flash write firmware_xesc_yf_rev4.bin.bin 0x08000000
+   st-flash write firmware_xesc_yf_rev4.bin 0x08000000
    ```
    When done, st-flash should report 'Flash written and verified! jolly good!' (or similar)
 4. Adapt your mower_config. Here's the relevant section out of mower_config.sh.example:
