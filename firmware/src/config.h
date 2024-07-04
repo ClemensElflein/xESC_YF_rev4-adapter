@@ -16,6 +16,9 @@
 #define NUM_SA_CYCLES_PER_TURN 4
 #define RPM_CALC_CYCLE_MILLIS 200  // How often to calc RPMs. Need to be high enough to catch enough SA cycles
 
+// Timer
+#define TIMER_STATUS TIM14
+
 // old
 
 // Hardware limits before going into fault

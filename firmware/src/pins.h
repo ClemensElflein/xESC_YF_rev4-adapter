@@ -18,9 +18,6 @@
 #define DEBUG_RX PA5
 #define DEBUG_TX PA4
 
-// Timer
-#define TIMER_STATUS TIM14
-
 // old
 
 #define PIN_CURRENT_SENSE 29
