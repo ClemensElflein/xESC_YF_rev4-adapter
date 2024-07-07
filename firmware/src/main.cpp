@@ -60,7 +60,6 @@ XescYFR4SettingsPacket settings = {0};
 bool settings_valid = false;
 
 /*
-bool internal_error = false;
 float error_i = 0;
 
 unsigned long last_current_control_micros = 0;
@@ -111,53 +110,34 @@ void updateFaults() {
     // FAULT_UNINITIALIZED
     if (!settings_valid) {
         faults |= FAULT_UNINITIALIZED;
+        //led_green.blink(500, 500, 500);
+        if(led_green.getState() != LED_BLINKING)
+            led_green.blinkInPeriod(200, 200, 800);
     }
 
-    // FAULT_WATCHDOG // TODO use STMs IWDG
+    // FAULT_WATCHDOG
+    // TODO: use STMs IWDG?
     if (millis() - last_watchdog_millis > WATCHDOG_TIMEOUT_MILLIS) {
         faults |= FAULT_WATCHDOG;
+        led_red.turnON();
     }
 
-    // FAULT_UNDERVOLTAGE
-    /*if(status.voltage_input < HW_LIMIT_VLOW) {
-      faults |= FAULT_UNDERVOLTAGE;
+    // VMS FAULTs
+    if (!digitalRead(PIN_VMS_FAULT)) {
+        if (digitalRead(PIN_VMS_IN)) {
+            faults |= FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT;  // Not fully clear if VMS Thermal Error and/or Overload/short
+            led_red.blink(500, 500);
+        } else {
+            faults |= FAULT_INVALID_HALL;  // Alt-use as OPEN_LOAD
+            led_red.blink(250, 250);
+        }
     }
-
-    // FAULT_OVERVOLTAGE
-    if(status.voltage_input > HW_LIMIT_VHIGH) {
-      faults |= FAULT_OVERVOLTAGE;
-    }
-
-    // FAULT_OVERCURRENT
-    if(status.current_input > HW_LIMIT_CURRENT) {
-      faults |= FAULT_OVERCURRENT;
-    }
-
-    // FAULT_OVERTEMP_MOTOR
-    //if(settings.has_motor_temp && status.temperature_motor >
-  min(HW_LIMIT_MOTOR_TEMP, settings.max_motor_temp)) {
-    //  faults |= FAULT_OVERTEMP_MOTOR;
-    //}
-    // FAULT_OVERTEMP_PCB
-    if(status.temperature_pcb > min(HW_LIMIT_PCB_TEMP, settings.max_pcb_temp)) {
-      faults |= FAULT_OVERTEMP_PCB;
-    }
-
-    // FAULT_INTERNAL_ERROR - this should NEVER be set
-    if(internal_error) {
-      faults |= FAULT_INTERNAL_ERROR;
-    }*/
 
     if (faults) {
-        if (led_red.getState() != LED_BLINKING)  // Boot-up blink sequence FIXME: Ugly
-            led_red.blink(500, 500);
-        if (led_green.getState() != LED_BLINKING)  // Boot-up blink sequence FIXME: Ugly
-            led_green.turnOFF();
         status.fault_code = faults;
         last_fault_millis = millis();
     } else if (faults == 0) {
-        if (led_green.getState() != LED_BLINKING)  // SA cycle blink sequence FIXME: Ugly
-            led_green.turnON();
+        led_green.turnON();
         if (status.fault_code != 0) {
             // Reset faults only if MIN_FAULT_TIME_MILLIS passed, or if it was a dedicated watchdog fault
             if (millis() - last_fault_millis > MIN_FAULT_TIME_MILLIS || status.fault_code == FAULT_WATCHDOG) {
@@ -283,8 +263,10 @@ void setup() {
 
     // VM Switch
     pinMode(PIN_VMS_IN, OUTPUT);
-    // digitalWrite(PIN_VMS_IN, LOW);
-    digitalWrite(PIN_VMS_IN, HIGH);  // TODO Wire & health check
+    digitalWrite(PIN_VMS_IN, LOW);  // VMC off
+    pinMode(PIN_VMS_DIAG_EN, OUTPUT);
+    digitalWrite(PIN_VMS_DIAG_EN, HIGH);  // VMS diagnostics on
+    pinMode(PIN_VMS_FAULT, INPUT);
 
     // Motor
     pinMode(PIN_MTR_BRK, OUTPUT);

@@ -4,7 +4,9 @@
 #define PIN_LED_GREEN PC15
 #define PIN_LED_RED PC14
 
-#define PIN_VMS_IN PA0  // VM-Switch IN
+#define PIN_VMS_IN PA0       // VM-Switch IN
+#define PIN_VMS_DIAG_EN PB6  // VM-Switch DIAG_EN
+#define PIN_VMS_FAULT PF2    // VM-Switch FAULT
 
 #define PIN_MTR_SA PB7   // Motor's SA (Hall) pin
 #define PIN_MTR_BRK PA3  // Motor's BRK pin

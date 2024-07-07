@@ -157,6 +157,15 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## History
+
+  | Version | Release Date | Info |
+  | ------- | :------------: | ---- |
+  | 0.1.1   | 2024-07-??   | Open VMC (no motor connected) detection
+  | 0.1.0   | 2024-07-05   | Generic functionality like Start, Stop, Break
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 <!-- CONTRIBUTING -->
