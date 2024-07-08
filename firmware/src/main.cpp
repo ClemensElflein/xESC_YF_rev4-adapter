@@ -19,7 +19,6 @@
 //
 
 #include <Arduino.h>
-#include <ezLED.h>
 
 #include <numeric>
 
@@ -32,10 +31,11 @@
 // #include "hardware/adc.h"
 // #include "hardware/dma.h"
 // #include "hardware/watchdog.h"*/
+#include "LED.h"
 #include "pins.h"
 #include "xesc_yfr4_datatypes.h"
 
-#define LED_ERROR_HOST_COMM led_red.blinkNumberOfTimes(20, 50, 1)
+#define LED_ERROR_HOST_COMM led_red.blink({.on = 100, .off = 100, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = false})
 
 // #define WRAP 3299
 
@@ -73,8 +73,8 @@ HardwareSerial hostSerial(HOST_RX, HOST_TX);
 PacketSerial packetSerial;
 FastCRC16 CRC16;
 
-ezLED led_green(PIN_LED_GREEN, CTRL_ANODE);
-ezLED led_red(PIN_LED_RED, CTRL_ANODE);
+LED led_green(PIN_LED_GREEN);
+LED led_red(PIN_LED_RED);
 
 HardwareTimer *status_timer;
 
@@ -110,38 +110,47 @@ void updateFaults() {
     // FAULT_UNINITIALIZED
     if (!settings_valid) {
         faults |= FAULT_UNINITIALIZED;
-        //led_green.blink(500, 500, 500);
-        if(led_green.getState() != LED_BLINKING)
-            led_green.blinkInPeriod(200, 200, 800);
     }
 
     // FAULT_WATCHDOG
     // TODO: use STMs IWDG?
     if (millis() - last_watchdog_millis > WATCHDOG_TIMEOUT_MILLIS) {
         faults |= FAULT_WATCHDOG;
-        led_red.turnON();
     }
 
     // VMS FAULTs
     if (!digitalRead(PIN_VMS_FAULT)) {
         if (digitalRead(PIN_VMS_IN)) {
             faults |= FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT;  // Not fully clear if VMS Thermal Error and/or Overload/short
-            led_red.blink(500, 500);
         } else {
             faults |= FAULT_INVALID_HALL;  // Alt-use as OPEN_LOAD
-            led_red.blink(250, 250);
         }
     }
 
     if (faults) {
         status.fault_code = faults;
         last_fault_millis = millis();
+
+        // Green LED
+        if (faults & FAULT_UNINITIALIZED) {  // Open VMC
+            led_green.blink({.on = 500, .off = 500});
+        } else {
+            led_green.off();
+        }
+        // Red LED by priority
+        if (faults & FAULT_INVALID_HALL) {           // Open VMC
+            led_red.blink({.on = 125, .off = 125});  // Quick blink (4Hz)
+        } else if (faults & (FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT)) {
+            led_red.blink({.on = 250, .off = 250});  // Fast blink (2Hz)
+        } else if (faults & FAULT_WATCHDOG) {
+            led_red.blink({.on = 500, .off = 500});
+        }
     } else if (faults == 0) {
-        led_green.turnON();
+        led_green.on();
         if (status.fault_code != 0) {
             // Reset faults only if MIN_FAULT_TIME_MILLIS passed, or if it was a dedicated watchdog fault
             if (millis() - last_fault_millis > MIN_FAULT_TIME_MILLIS || status.fault_code == FAULT_WATCHDOG) {
-                led_red.turnOFF();
+                led_red.off();
                 status.fault_code = 0;
             }
         }
@@ -266,6 +275,11 @@ void setup() {
     digitalWrite(PIN_VMS_IN, LOW);  // VMC off
     pinMode(PIN_VMS_DIAG_EN, OUTPUT);
     digitalWrite(PIN_VMS_DIAG_EN, HIGH);  // VMS diagnostics on
+
+    // TODO: Check FLASH->OPTR for FLASH_OPTR_NRST_MODE_1
+    /* enable GPIO mode at the reset pin */
+    //volatile uint32_t optr = FLASH->OPTR;
+    // FLASH_OPTR_NRST_MODE_1; // Set NRST pin to GPIO mode
     pinMode(PIN_VMS_FAULT, INPUT);
 
     // Motor
@@ -301,8 +315,8 @@ void setup() {
     // analogReadResolution(12);
 
     // LED blink code "Boot up successful"
-    led_green.blinkNumberOfTimes(200, 200, 3);  // 50ms ON, 200ms OFF, repeat 3 times, blink immediately
-    led_red.blinkNumberOfTimes(200, 200, 3);    // 50ms ON, 200ms OFF, repeat 3 times, blink immediately
+    led_green.blink({.limit_blink_cycles = 3, .fulfill = true});  // Default = 200ms ON, 200ms OFF
+    led_red.blink({.limit_blink_cycles = 3, .fulfill = true});    // Default = 200ms ON, 200ms OFF
 }
 
 /*void loop1()
@@ -358,13 +372,6 @@ void loop() {
     led_green.loop();
     led_red.loop();
     commitMotorState();
-
-    // Green LED
-    /*if (status.fault_code != 0 && duty == 0.0f) {
-      led_green.turnON();
-    } else {
-      led_green
-    }*/
 
     /*
   switch (analog_round_robin)

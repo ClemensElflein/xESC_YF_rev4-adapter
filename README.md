@@ -110,9 +110,12 @@ The latter has the advantage that you immediately see that you already crossed g
 <table>
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
   <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
-  <tr><td>on</td><td></td><td>Ready and connected by xesc_ros</td></tr>
+  <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
+  <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>
   <!-- <tr><td>flash</td><td></td><td>SA tacho flash for 90° rotation</td></tr> -->
-  <tr><td></td><td>blink (1Hz)</td><td>Waiting for OpenMower (xesc_ros driver connect) or Motor/Controller Fault. Check ESC's status via `rostopic echo  /mower/status` error code</td></tr>
+  <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected)</td></tr>
+  <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
+  <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
   <tr><td></td><td>on</td><td>Wrong ROS driver, which result in mass packet size or CRC errors, which in turn look like 'Red=on'</td></tr>
 </table>
@@ -146,10 +149,12 @@ _For more examples, please refer to the [Documentation](https://example.com)_
     - [x] Generic VM control (on/off)
     - [x] Generic motor control (start, stop, break)
     - [x] Read SA, math RPM
-    - [ ] Open VMC (no motor connected) detection
+    - [x] Open VMC (no motor connected) detection
+    - [x] VMC-short and thermal error handling of VM-Switch
     - [ ] Motor current consumption
     - [ ] Stock motor (wrong) cabling detection
     - [ ] STM32 bootloader / flash via UART support
+    - [ ] Drive LEDs by PWM as one get blind when watching LED codes, but will cost approx. 2.5k of flash
 - [x] ROS driver
     - [x] xesc_ros::xesc_yfr4
 
@@ -159,10 +164,10 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
 ## History
 
-  | Version | Release Date | Info |
-  | ------- | :------------: | ---- |
-  | 0.1.1   | 2024-07-??   | Open VMC (no motor connected) detection
-  | 0.1.0   | 2024-07-05   | Generic functionality like Start, Stop, Break
+  | Version | Release Date | Info                                          |
+  | ------- | :----------: | --------------------------------------------- |
+  | 0.1.1   |  2024-07-09  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection       |
+  | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break |
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
