@@ -113,11 +113,11 @@ The latter has the advantage that you immediately see that you already crossed g
   <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
   <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>
   <!-- <tr><td>flash</td><td></td><td>SA tacho flash for 90° rotation</td></tr> -->
+  <tr><td></td><td>on</td><td>TODO NRST patch</td></tr>
   <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected)</td></tr>
   <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
   <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
-  <tr><td></td><td>on</td><td>Wrong ROS driver, which result in mass packet size or CRC errors, which in turn look like 'Red=on'</td></tr>
 </table>
 
 

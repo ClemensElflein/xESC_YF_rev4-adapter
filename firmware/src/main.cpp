@@ -35,7 +35,7 @@
 #include "pins.h"
 #include "xesc_yfr4_datatypes.h"
 
-#define LED_ERROR_HOST_COMM led_red.blink({.on = 100, .off = 100, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = false})
+#define LED_ERROR_HOST_COMM led_red.blink({.on = 20, .off = 30, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = true})
 
 // #define WRAP 3299
 

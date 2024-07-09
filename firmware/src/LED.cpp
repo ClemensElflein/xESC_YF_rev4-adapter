@@ -54,7 +54,11 @@ void LED::loop(void) {
         return;
 
     uint32_t now = millis();
-    if ((_active_state.state == LED_STATE_UNDEF || !_active_state.props.fulfill) && _next_state.state == LED_STATE_IDLE && !(_next_state.props == _active_state.props)) {
+
+    // Make _next _active when
+    if (_next_state.state == LED_STATE_IDLE &&                                              // _next job exists
+        (_active_state.state == LED_STATE_UNDEF ||                                          // _active finished
+         (!_active_state.props.fulfill && !(_next_state.props == _active_state.props)))) {  // _active is not fulfillable and _next differs to _active
         _active_state = _next_state;
         _next_state.state = LED_STATE_UNDEF;
         _active_state.next_state_cycle_millis = now;  // Just activated = next cycle = now
