@@ -26,6 +26,7 @@ jobs:
         run: |
           mkdir artifacts/
           cp firmware/.pio/build/STM32C011F6_V1x/firmware.bin ./artifacts/firmware_xesc_yf_rev4.bin
+          cp firmware/.pio/build/STM32C011F6_Disable_NRST/firmware.bin ./artifacts/firmware_disable_nrst.bin
 
       - name: Step 3 - Use the Upload Artifact GitHub Action
         uses: actions/upload-artifact@v4

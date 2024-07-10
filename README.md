@@ -57,10 +57,10 @@ In addition to this adapter, it's nevertheless **required to exchange two cables
 
 
 <!-- GETTING STARTED -->
-## Getting Started
+<!-- ## Getting Started
 
 > [!WARNING]  
-> This project is in **early development state** and only generics like start, stop & break do work now!
+> This project is in **early development state** and only generics like start, stop & break do work now! -->
 
 ## Requirements
 
@@ -80,14 +80,22 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ## Installation
 
-1. The compiled firmware can be found in the [Actions](/actions) section. Click the one you're intersted in (newest or tagged), scroll down to 'Artifacts', download and unzip. 
+1. The compiled firmware can be found in the [Actions](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/actions) section. Click the one you're intersted in (newest or tagged), scroll down to 'Artifacts', download and unzip. 
 2. Connect your ST-Link probe to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
-3. Flash the adapter:
+3. If you didn't disabled NRST pin on this board before, you need to flash a special 'Disable NRST' firmware **one time** via:
+   ```sh
+   st-flash write firmware_disable_nrst.bin 0x08000000
+   ```
+   When flashing this 'Disable NRST' firmware, the LEDs should show the following sequence:<br>
+   "green + red" whereas red indicated the NRST pin doesn't got disabled yet, immediately followed by green which indicate a successful disabled-NRST-pin flash.<br>
+   2 seconds later the MCU should reboot and show<br> 
+   "green", which indicate that NRST is already disabled.
+4. Flash the adapter:
    ```sh
    st-flash write firmware_xesc_yf_rev4.bin 0x08000000
    ```
    When done, st-flash should report 'Flash written and verified! jolly good!' (or similar)
-4. Adapt your mower_config. Here's the relevant section out of mower_config.sh.example:
+5. Adapt your mower_config. Here's the relevant section out of mower_config.sh.example:
     ```
    # Select your ESC type
    # Supported values as of today:
@@ -97,7 +105,7 @@ The latter has the advantage that you immediately see that you already crossed g
    # xesc_2040_w_r4ma: for the RP2040 version (very experimental!), but with Rev4 (Mow) Motor Adapter (only available for YardForceSA650 mower type)
    export OM_MOWER_ESC_TYPE="xesc_mini"
     ```
-5. Restart openmower via:
+6. Restart openmower via:
    ```sh
    sudo systemctl restart openmower
    ```
@@ -113,17 +121,12 @@ The latter has the advantage that you immediately see that you already crossed g
   <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
   <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>
   <!-- <tr><td>flash</td><td></td><td>SA tacho flash for 90° rotation</td></tr> -->
-  <tr><td></td><td>on</td><td>TODO NRST patch</td></tr>
+  <tr><td></td><td>on</td><td>Disable NRST firmware not applied. See <a href="#installation">Installation</a></td></tr>
   <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected)</td></tr>
   <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
   <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
 </table>
-
-
-<!--
-
--->
 
 
 <!-- USAGE EXAMPLES -->
@@ -166,7 +169,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                          |
   | ------- | :----------: | --------------------------------------------- |
-  | 0.1.1   |  2024-07-09  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection       |
+  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection       |
   | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break |
 
 

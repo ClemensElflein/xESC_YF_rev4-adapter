@@ -273,14 +273,16 @@ void setup() {
     // VM Switch
     pinMode(PIN_VMS_IN, OUTPUT);
     digitalWrite(PIN_VMS_IN, LOW);  // VMC off
+
+    // Check NRST_MODE if GPIO mode (NRST pin disabled)
+    if (!(FLASH->OPTR & FLASH_OPTR_NRST_MODE_1) || (FLASH->OPTR & FLASH_OPTR_NRST_MODE_0)) {
+        led_red.on();
+        led_red.loop();
+        for (;;);
+    }
     pinMode(PIN_VMS_DIAG_EN, OUTPUT);
     digitalWrite(PIN_VMS_DIAG_EN, HIGH);  // VMS diagnostics on
-
-    // TODO: Check FLASH->OPTR for FLASH_OPTR_NRST_MODE_1
-    /* enable GPIO mode at the reset pin */
-    //volatile uint32_t optr = FLASH->OPTR;
-    // FLASH_OPTR_NRST_MODE_1; // Set NRST pin to GPIO mode
-    pinMode(PIN_VMS_FAULT, INPUT);
+    pinMode(PIN_VMS_FAULT, INPUT);        // Take attention to enable FAULT input AFTER NRST check
 
     // Motor
     pinMode(PIN_MTR_BRK, OUTPUT);
