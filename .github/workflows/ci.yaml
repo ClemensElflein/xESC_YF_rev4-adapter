@@ -1,23 +1,52 @@
 name: CI
 
-on: [push]
+on:
+  push:
+    paths-ignore:
+      - "**.md"
 
 jobs:
+
+  erc-drc-checks:
+    runs-on: ubuntu-latest
+    if: github.ref_type != 'tag'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: INTI-CMNB/KiBot@v2_k8
+        with:
+          config: PCB/xESC_YF_r4.kibot.yaml
+          board: PCB/xESC_YF_r4.kicad_pcb
+          verbose: 1
+
   firmware:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+
+      - name: Cache pip
+        uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/pip
-            ~/.platformio/.cache
-          key: ${{ runner.os }}-pio
-      - uses: actions/setup-python@v5
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
         with:
-          python-version: '3.11'
-      - name: Install PlatformIO Core
-        run: pip install --upgrade platformio
+          path: ~/.platformio
+          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
 
       - name: Run PlatformIO
         run: pio run -d firmware
@@ -28,7 +57,7 @@ jobs:
           cp firmware/.pio/build/STM32C011F6_V1x/firmware.bin ./artifacts/firmware_xesc_yf_rev4.bin
           cp firmware/.pio/build/STM32C011F6_Disable_NRST/firmware.bin ./artifacts/firmware_disable_nrst.bin
 
-      - name: Step 3 - Use the Upload Artifact GitHub Action
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Firmware-xESC-YardForce-Rev4
@@ -37,7 +66,7 @@ jobs:
   tagged-release:
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
-    needs: [firmware]
+    needs: firmware
 
     steps:
       - uses: actions/checkout@v4
