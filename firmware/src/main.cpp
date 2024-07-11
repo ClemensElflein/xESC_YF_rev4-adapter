@@ -67,7 +67,7 @@ unsigned long last_current_control_micros = 0;
 volatile unsigned long last_watchdog_millis = 0;
 volatile unsigned long last_fault_millis = 0;
 
-// uint8_t analog_round_robin = 0;
+uint8_t analog_round_robin = 0;
 
 HardwareSerial hostSerial(HOST_RX, HOST_TX);
 PacketSerial packetSerial;
@@ -310,11 +310,7 @@ void setup() {
     status.fw_version_minor = 1;
     status.direction = 0;  // Our motor has only one direction
 
-    // Already initialized
-
-    // --- old
-
-    // analogReadResolution(12);
+    analogReadResolution(12);
 
     // LED blink code "Boot up successful"
     led_green.blink({.limit_blink_cycles = 3, .fulfill = true});  // Default = 200ms ON, 200ms OFF
@@ -370,31 +366,56 @@ VIN_R2);
 }
 */
 
+static int32_t readVref() {
+#ifdef __LL_ADC_CALC_VREFANALOG_VOLTAGE
+    return (__LL_ADC_CALC_VREFANALOG_VOLTAGE(analogRead(AVREF), LL_ADC_RESOLUTION));
+#else
+    return (VREFINT * ADC_RANGE / analogRead(AVREF));  // ADC sample to mV
+#endif
+}
+
+#ifdef ATEMP
+static int32_t read_mcu_temp(int32_t VRef) {
+#ifdef __LL_ADC_CALC_TEMPERATURE
+    return (__LL_ADC_CALC_TEMPERATURE(VRef, analogRead(ATEMP), LL_ADC_RESOLUTION));
+#elif defined(__LL_ADC_CALC_TEMPERATURE_TYP_PARAMS)
+    return (__LL_ADC_CALC_TEMPERATURE_TYP_PARAMS(AVG_SLOPE, VTEMP, CALX_TEMP, VRef, analogRead(ATEMP), LL_ADC_RESOLUTION));
+#else
+    return 0;
+#endif
+}
+#endif
+
 void loop() {
     led_green.loop();
     led_red.loop();
     commitMotorState();
 
-    /*
-  switch (analog_round_robin)
-  {
-  case 0:
-    status.current_input = readCurrent() * 0.0008 + status.current_input * 0.9992;
-    break;
-  case 1:
-    status.voltage_input = readVIN() * 0.001 + status.voltage_input * 0.999;
-    break;
-  case 2:
-    status.temperature_motor = readMotorTemp() * 0.001 + status.temperature_motor
-  * 0.999; break; case 3: status.temperature_pcb = readPcbTemp() * 0.001 +
-  status.temperature_pcb * 0.999; break;
+    volatile uint32_t mcu_temp;
 
-  default:
-    break;
-  }
+    int32_t VRef = readVref();
+    switch (analog_round_robin) {
+        /*case 0:
+            status.current_input = readCurrent() * 0.0008 + status.current_input * 0.9992;
+            break;
+        case 1:
+            status.voltage_input = readVIN() * 0.001 + status.voltage_input * 0.999;
+            break;
+        case 2:
+            status.temperature_motor = readMotorTemp() * 0.001 + status.temperature_motor * 0.999;
+            break;*/
+        case 3:
+#ifdef ATEMP
+            mcu_temp = read_mcu_temp(VRef);
+            DEBUG_PRINTF("VRef(mv)= %i, Temp(°C) = %i", VRef, read_mcu_temp(VRef));
+#endif
+            break;
 
-  analog_round_robin = (analog_round_robin + 1) % 4;
-  */
+        default:
+            break;
+    }
+
+    analog_round_robin = (analog_round_robin + 1) % 4;
 
     packetSerial.update();
 }

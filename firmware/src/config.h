@@ -19,6 +19,15 @@
 // Timer
 #define TIMER_STATUS TIM14
 
+// Analog read resolution
+#define LL_ADC_RESOLUTION LL_ADC_RESOLUTION_12B
+#define ADC_RANGE 4096
+
+// ADC - ATEMP
+#define CALX_TEMP 30
+#define VTEMP 760
+#define AVG_SLOPE 2530
+
 // old
 
 // Hardware limits before going into fault
