@@ -1,0 +1,4 @@
+[submodule "firmware/ext/modm"]
+	path = firmware/ext/modm
+	url = https://github.com/Apehaenger/modm.git
+	branch = feature/STM32C0x1
