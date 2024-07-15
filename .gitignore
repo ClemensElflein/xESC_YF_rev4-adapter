@@ -31,3 +31,9 @@ fp-info-cache
 # PCB Production files
 PCB/Gerber/
 PCB/production/backups/
+firmware/build/
+firmware/src/modm/
+firmware/src/SConstruct
+firmware/src/project.xml.log
+firmware/src/CMakeLists.txt
+firmware/src/.sconsign.dblite

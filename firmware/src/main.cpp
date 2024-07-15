@@ -1,12 +1,15 @@
 #include <modm/platform.hpp>
+#include "board.hpp"
+
 using namespace modm::platform;
 using namespace std::chrono_literals;
 
 int main() {
-    GpioC14::setOutput();
-    //GpioA0::setOutput();
+    Board::initialize();
+    Board::LedGn::set();
     while (true) {
-        GpioC14::toggle();
+        Board::LedGn::toggle();
+        Board::LedRd::toggle();
         modm::delay(0.5s);
     }
 }
