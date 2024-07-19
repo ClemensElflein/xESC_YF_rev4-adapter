@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "cortex-debug",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/firmware/build",
+            "executable": "xESC_YF_rev4-Firmware.elf",
+            "servertype": "openocd",
+            "interface": "swd",
+            "device": "STM32C011F6",
+            "runToEntryPoint": "${workspaceFolder}/firmware/src/main",
+            "runToMain": true,
+            "preRestartCommands": [
+                "target remote localhost:3333",
+                "add-symbol-file ${workspaceFolderBasename}",
+                "enable breakpoint",
+                "monitor reset"
+            ],
+            "armToolchainPath": "/opt/st/stm32cubeclt_1.15.1/GNU-tools-for-STM32/bin",
+            "configFiles": [
+                "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/openocd/scripts/interface/stlink.cfg",
+                "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/openocd/scripts/target/stm32c0x.cfg"
+            ],
+            "searchDir": [
+                "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/openocd/scripts"
+            ],
+            "svdFile": "${workspaceFolder}/firmware/etc/STM32C011.svd",
+            "preLaunchTask": "Build project"
+        }
+    ]
+}

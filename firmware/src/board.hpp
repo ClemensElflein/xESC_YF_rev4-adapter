@@ -24,7 +24,7 @@
 using namespace modm::platform;
 
 namespace Board {
-/// @ingroup modm_board_custom_stm32c0x modm_board_custom_stm32c0x
+/// @ingroup modm_board_xescyfr4
 /// @{
 using namespace modm::literals;
 
@@ -57,14 +57,13 @@ struct SystemClock {
     }
 };
 
-using LedGn = GpioC15;
-using LedRd = GpioC14;
-
-using Leds = SoftwareGpioPort<LedGn, LedRd>;
+using LedGreen = GpioC15;
+using LedRed = GpioC14;
+using Leds = SoftwareGpioPort<LedGreen, LedRed>;
 /// @}
 
 namespace om_uart {
-/// @ingroup modm_board_custom_stm32c0x
+/// @ingroup modm_board_xescyfr4
 /// @{
 using Tx = GpioOutputA9;
 using Rx = GpioInputA10;
@@ -73,7 +72,7 @@ using Uart = BufferedUart<UsartHal1, UartTxBuffer<64>>;
 }  // namespace om_uart
 
 namespace proto_uart {
-/// @ingroup modm_board_custom_stm32c0x
+/// @ingroup modm_board_xescyfr4
 /// @{
 using Tx = GpioOutputA4;
 using Rx = GpioInputA5;
@@ -90,8 +89,7 @@ initialize() {
     GpioA9::remap();   // Remap A9 -> A11
     GpioA10::remap();  // Remap A10 -> A12
 
-    LedGn::setOutput();
-    LedRd::setOutput();
+    Leds::setOutput(modm::Gpio::Low);
 }
 
 }  // namespace Board
