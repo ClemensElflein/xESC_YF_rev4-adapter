@@ -18,7 +18,6 @@
 #ifndef MODM_XESCYFR4_BOARD_HPP
 #define MODM_XESCYFR4_BOARD_HPP
 
-#include <modm/architecture/interface/clock.hpp>
 #include <modm/platform.hpp>
 
 using namespace modm::platform;
@@ -62,34 +61,61 @@ using LedRed = GpioC14;
 using Leds = SoftwareGpioPort<LedGreen, LedRed>;
 /// @}
 
-namespace om_uart {
+namespace host_uart {
 /// @ingroup modm_board_xescyfr4
 /// @{
 using Tx = GpioOutputA9;
 using Rx = GpioInputA10;
-using Uart = BufferedUart<UsartHal1, UartTxBuffer<64>>;
+using Uart = BufferedUart<UsartHal1, UartTxBuffer<32>, UartRxBuffer<32>>;
 /// @}
-}  // namespace om_uart
+}  // namespace host_uart
 
 namespace proto_uart {
 /// @ingroup modm_board_xescyfr4
 /// @{
 using Tx = GpioOutputA4;
 using Rx = GpioInputA5;
-using Uart = BufferedUart<UsartHal2, UartTxBuffer<64>>;
+using Uart = BufferedUart<UsartHal2, UartTxBuffer<32>>;
 /// @}
 }  // namespace proto_uart
+
+// VM-Switch
+namespace vm_switch {
+/// @ingroup modm_board_xescyfr4
+/// @{
+using In = GpioOutputA0;          // IN (High = VMC-on)
+using DiagEnable = GpioOutputB6;  // DIAG_EN (High = Diagnostics on)
+using Fault = GpioInputF2;        // !FAULT (Low = Fault detected)
+/// @}
+}  // namespace vm_switch
+
+// VM-Switch
+namespace motor {
+/// @ingroup modm_board_xescyfr4
+/// @{
+using SA = GpioInputB7;    // Motor SA (Hall)
+using Brk = GpioOutputA3;  // Motor BRK
+using RS = GpioOutputA6;   // Motor !RS (Rapid/Rotor Start) (LowActive)
+/// @}
+}  // namespace motor
 
 inline void
 initialize() {
     SystemClock::enable();
     SysTickTimer::initialize<SystemClock>();
 
-    // Remap om_uart GPIOs
+    // Remap host_uart GPIOs
     GpioA9::remap();   // Remap A9 -> A11
     GpioA10::remap();  // Remap A10 -> A12
 
+    // Init GPIOs
     Leds::setOutput(modm::Gpio::Low);
+    vm_switch::In::setOutput(modm::Gpio::Low);            // VM-Switch, VMC = off
+    vm_switch::DiagEnable::setOutput(modm::Gpio::Low);    // VM-Switch diagnostics disable because Fault input get shared with  NRST!!
+    vm_switch::Fault::setInput(Gpio::InputType::PullUp);  // VM-Switch !FAULT signal (LowActive). Take attention to FAULT doesn't get triggered before NRST check
+    motor::SA::setInput(Gpio::InputType::Floating);       // Motor SA (Hall)
+    motor::Brk::setOutput(modm::Gpio::Low);               // Motor BRK
+    motor::RS::setOutput(modm::Gpio::High);               // Motor !RS (Rapid/Rotor Start)
 }
 
 }  // namespace Board

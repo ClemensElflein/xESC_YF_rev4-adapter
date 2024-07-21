@@ -1,13 +1,5 @@
 #pragma once
 
-// Define to stream debug messages via UART
-//#define DEBUG_SERIAL debugSerial
-#define DEBUG_BAUD 460800UL
-
-#define PACKET_SERIAL hostSerial
-
-#define STATUS_UPDATE_MICROS 20000UL
-
 #define WATCHDOG_TIMEOUT_MILLIS 500
 
 // Time to keep motor controller in fault once a fault occurs
