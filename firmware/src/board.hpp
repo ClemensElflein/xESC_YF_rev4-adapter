@@ -20,6 +20,12 @@
 
 #include <modm/platform.hpp>
 
+#include "config.h"
+
+#ifdef PROTO_DEBUG
+#include <modm/debug/logger.hpp>
+#endif
+
 using namespace modm::platform;
 
 namespace Board {
@@ -32,6 +38,7 @@ struct SystemClock {
     static constexpr uint32_t Ahb = Frequency;
     static constexpr uint32_t Apb = Frequency;
 
+    static constexpr uint32_t Adc1 = Frequency;
     static constexpr uint32_t Crc = Ahb;
     static constexpr uint32_t Flash = Ahb;
     static constexpr uint32_t Exti = Ahb;
@@ -51,7 +58,6 @@ struct SystemClock {
         Rcc::setAhbPrescaler(Rcc::AhbPrescaler::Div1);  // = 48MHz HCLK
         Rcc::setApbPrescaler(Rcc::ApbPrescaler::Div1);  // = 48MHz PCLK/APB Timer Clocks
         Rcc::updateCoreFrequency<Frequency>();          // update frequencies for busy-wait delay functions
-
         return true;
     }
 };
@@ -89,7 +95,7 @@ using Fault = GpioInputF2;        // !FAULT (Low = Fault detected)
 /// @}
 }  // namespace vm_switch
 
-// VM-Switch
+// Motor
 namespace motor {
 /// @ingroup modm_board_xescyfr4
 /// @{
@@ -99,25 +105,60 @@ using RS = GpioOutputA6;   // Motor !RS (Rapid/Rotor Start) (LowActive)
 /// @}
 }  // namespace motor
 
+/// @ingroup modm_board_xescyfr4
+/// @{
+typedef GpioInputA1 AdcCurSense2;
+typedef GpioInputA2 AdcCurSense;
+
+#ifdef PROTO_DEBUG
+// Create an IODeviceWrapper around the Uart Peripheral we want to use
+modm::IODeviceWrapper<proto_uart::Uart, modm::IOBuffer::BlockIfFull> LoggerDevice;
+#endif
+
 inline void
 initialize() {
     SystemClock::enable();
     SysTickTimer::initialize<SystemClock>();
 
-    // Remap host_uart GPIOs
-    GpioA9::remap();   // Remap A9 -> A11
-    GpioA10::remap();  // Remap A10 -> A12
-
     // Init GPIOs
     Leds::setOutput(modm::Gpio::Low);
-    vm_switch::In::setOutput(modm::Gpio::Low);            // VM-Switch, VMC = off
-    vm_switch::DiagEnable::setOutput(modm::Gpio::Low);    // VM-Switch diagnostics disable because Fault input get shared with  NRST!!
+
+    vm_switch::In::setOutput(Gpio::OutputType::PushPull);
+    vm_switch::In::reset();  // VM-Switch, VMC = off
+    vm_switch::DiagEnable::setOutput(Gpio::OutputType::PushPull);
+    vm_switch::DiagEnable::reset();                       // VM-Switch diagnostics disable because Fault input get shared with NRST!!
     vm_switch::Fault::setInput(Gpio::InputType::PullUp);  // VM-Switch !FAULT signal (LowActive). Take attention to FAULT doesn't get triggered before NRST check
-    motor::SA::setInput(Gpio::InputType::Floating);       // Motor SA (Hall)
-    motor::Brk::setOutput(modm::Gpio::Low);               // Motor BRK
-    motor::RS::setOutput(modm::Gpio::High);               // Motor !RS (Rapid/Rotor Start)
+
+    motor::SA::setInput(Gpio::InputType::Floating);  // Motor SA (Hall)
+    motor::Brk::setOutput(Gpio::OutputType::PushPull);
+    motor::Brk::reset();  // Motor BRK
+    motor::RS::setOutput(Gpio::OutputType::PushPull);
+    motor::RS::set();  // Motor !RS (Rapid/Rotor Start)
+
+    // Remap and init host_uart
+    GpioA9::remap();   // Remap A9 -> A11
+    GpioA10::remap();  // Remap A10 -> A12
+    host_uart::Uart::connect<host_uart::Tx::Tx, host_uart::Rx::Rx>();
+    host_uart::Uart::initialize<SystemClock, 115200_Bd>();
+
+#ifdef PROTO_DEBUG
+    proto_uart::Uart::connect<proto_uart::Tx::Tx, proto_uart::Rx::Rx>();
+    proto_uart::Uart::initialize<SystemClock, PROTO_DEBUG_BAUD>();
+    MODM_LOG_INFO << modm::endl
+                  << modm::endl
+                  << "Board initialized" << modm::endl;
+#endif
 }
+/// @}
 
 }  // namespace Board
+
+#ifdef PROTO_DEBUG
+// Set all four logger streams to use the UART
+modm::log::Logger modm::log::debug(Board::LoggerDevice);
+modm::log::Logger modm::log::info(Board::LoggerDevice);
+modm::log::Logger modm::log::warning(Board::LoggerDevice);
+modm::log::Logger modm::log::error(Board::LoggerDevice);
+#endif
 
 #endif  // MODM_XESCYFR4_BOARD_HPP

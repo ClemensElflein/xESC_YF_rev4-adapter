@@ -15,8 +15,9 @@
 // SOFTWARE.
 //
 
-#include <modm/debug/logger.hpp>
+#include <modm/driver/adc/adc_sampler.hpp>
 #include <modm/platform.hpp>
+#include <modm/processing/timer.hpp>
 
 #include "COBS.h"
 #include "LedSeq.hpp"
@@ -32,34 +33,27 @@ using namespace Board;
 using namespace std::chrono_literals;
 using namespace std;
 
-// UART print debugging via proto_uart
-#undef MODM_LOG_LEVEL
-#define MODM_LOG_LEVEL modm::log::DEBUG
-// Create an IODeviceWrapper around the Uart Peripheral we want to use
-modm::IODeviceWrapper<proto_uart::Uart, modm::IOBuffer::BlockIfFull> loggerDevice;
-// Set all four logger streams to use the UART
-modm::log::Logger modm::log::debug(loggerDevice);
-modm::log::Logger modm::log::info(loggerDevice);
-modm::log::Logger modm::log::warning(loggerDevice);
-modm::log::Logger modm::log::error(loggerDevice);
-
 #define MILLIS modm::Clock::now().time_since_epoch().count()
 
-// modm::ui::Led red([](uint8_t brightness) {
-// Timer3::setCompareValue<Board::LedRd::Ch2>(modm::ui::table22_16_256[brightness]);
-//});
-
+// LED sequencer
 LedSeq<LedGreen> ledseq_green;
 LedSeq<LedRed> ledseq_red;
 #define LEDSEQ_ERROR_LL_COMM ledseq_red.blink({.on = 20, .off = 30, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = true})
 
-#define COBS_BUFFER_SIZE 200
+// Host comms (COBS)
+#define COBS_BUFFER_SIZE 100                 // Should be at least size of biggest RX/TX message + some COBS overhead bytes
 static uint8_t buffer_rx[COBS_BUFFER_SIZE];  // Serial RX buffer for COBS encoded data up to COBS end marker
 static unsigned int idx_buffer_rx = 0;
+static uint8_t buffer_tx[COBS_BUFFER_SIZE];  // Serial TX buffer for COBS encoded messages
 COBS cobs;
 
-volatile unsigned long last_watchdog_millis = 0;
-volatile unsigned long last_fault_millis = 0;
+// ADC
+uint8_t adc_rr = 0;            // Analog round robin counter
+uint16_t vref;                 // VRef of ADC
+double cur_sense, cur_sense2;  // Current Sense ADC values (mA)
+
+volatile uint32_t last_watchdog_millis = 0;
+volatile uint32_t last_fault_millis = 0;
 
 // The current duty for the motor (-1.0 - 1.0)
 volatile float duty = 0.0;
@@ -70,15 +64,16 @@ float duty_setpoint = 0.0;
 // init with out of range duty, so we have to update
 // volatile float last_duty = 1000.0f;
 
-volatile uint32_t tacho = 0;
-volatile unsigned int sa_cycles = 0;  // SA cycles since last status
+// SA (Hall) Input - CaptureCompare Timer Configuration
+volatile uint32_t sa_ticks = 0;  // SA Timer Ticks between 2 SA Signals. Has to be larger than tick register due to overflow
+volatile uint32_t sa_tacho = 0;  // SA Tacho ticks (1 ticks/360)
 
 XescYFR4StatusPacket status = {};
 XescYFR4SettingsPacket settings = {};
 bool settings_valid = false;
 
 void sendMessage(void *message, size_t size) {
-    // packages need to be at least 1 byte of type, 1 byte of data and 2 bytes of
+    // Packages have to be at least 1 byte of type + 1 byte of data + 2 bytes of CRC
     if (size < 4) {
         LEDSEQ_ERROR_LL_COMM;
         return;
@@ -86,14 +81,41 @@ void sendMessage(void *message, size_t size) {
     uint8_t *data_pointer = (uint8_t *)message;
 
     // Calc CRC
-    uint16_t crc = CRC::Calculate((uint8_t *)message, size - 2, CRC::CRC_16_CCITTFALSE());
+    uint16_t crc = CRC::Calculate(data_pointer, size - 2, CRC::CRC_16_CCITTFALSE());
     data_pointer[size - 1] = (crc >> 8) & 0xFF;
     data_pointer[size - 2] = crc & 0xFF;
 
-    host_uart::Uart::write((uint8_t *)message, size);
+    /*
+    #ifdef PROTO_DEBUG
+        MODM_LOG_DEBUG << "before encoding " << size << "byte:" << modm::endl;
+        uint8_t *temp = data_pointer;
+        for (size_t i = 0; i < size; i++) {
+            MODM_LOG_DEBUG << *temp << " ";
+            temp++;
+        }
+        MODM_LOG_DEBUG << modm::endl;
+    #endif */
+
+    // Encode message
+    size_t encoded_size = cobs.encode((uint8_t *)message, size, buffer_tx);
+    buffer_tx[encoded_size] = 0;
+    encoded_size++;
+
+    /*
+    #ifdef PROTO_DEBUG
+        MODM_LOG_DEBUG << "encoded size " << encoded_size << "byte:" << modm::endl;
+        for (size_t i = 0; i < encoded_size; i++) {
+            MODM_LOG_DEBUG << buffer_tx[i] << " ";
+        }
+        MODM_LOG_DEBUG << modm::endl;
+    #endif */
+
+    // write() byte as long as the TX buffer isn't full
+    for (size_t i = 0; i < encoded_size;)
+        if (host_uart::Uart::write(buffer_tx[i])) i++;
 }
 
-void updateFaults() {
+void update_faults() {
     uint32_t faults = 0;
 
     // FAULT_UNINITIALIZED
@@ -109,8 +131,10 @@ void updateFaults() {
 
     // VMS FAULTs
     if (!vm_switch::Fault::read()) {
-        if (vm_switch::In::isSet()) {                          // VM-Switch is "on"
-            faults |= FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT;  // Not fully clear if VMS Thermal Error and/or Overload/short
+        if (vm_switch::In::isSet()) {  // VM-Switch is "on"
+            // Disable VM-Switch diagnostics when switched on,
+            // because there's something miss-understood by me, or wrong with my PCB design
+            // faults |= FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT;  // Not fully clear if VMS Thermal Error and/or Overload/short
         } else {
             faults |= FAULT_INVALID_HALL;  // Alt-use as OPEN_LOAD
         }
@@ -146,68 +170,82 @@ void updateFaults() {
     }
 }
 
+void set_motor_state() {
+    float new_duty = status.fault_code ? 0.0f : duty_setpoint;
+    if (new_duty == duty) {
+        return;
+    }
+    if (new_duty == 0.0f) {  // Stop motor
+        motor::RS::set();    // !RS off
+        motor::Brk::set();   // Break
+    } else {                  // Start motor
+        motor::Brk::reset();  // Release break
+        motor::RS::reset();   // !RS on
+    }
+    duty = new_duty;
+}
+
 /**
- * @brief send_status
- * Get called every STATUS_UPDATE_MICROS (by hardware timer)
+ * @brief update_status() get called every STATUS_CYCLE (by hardware timer)
  */
-void send_status() {
-    unsigned int sa_cycles_bak = sa_cycles;  // Buffer SA cycles because the next cycle might happen within the next 3ms
-    sa_cycles = 0;
+void update_status() {
+    static uint8_t motor_stopped_cycles = 0;  // No tacho change cycle counter
+    uint16_t rpm;
+
     status.seq++;
-    tacho += sa_cycles_bak;
-    updateFaults();
+    update_faults();
 
-    /* Some SA cycle infos
-     *
-     * My stock motor stats:
-     *   Nom RPM @ 24VDC = 3488rpm = 4.3ms/SA cycle whereas 4 cycles = 360°
-     */
+    if (!(status.fault_code & FAULT_INVALID_HALL)) {  // FAULT_INVALID_HALL = alt-use as OPEN_LOAD
+        vm_switch::In::set();
+    }
+
+    set_motor_state();
+
+    if (duty == 0.0f) {
+        // Check if motor stopped rotating
+        if (sa_tacho == status.tacho) {  // Tacho equals last-tacho value
+            // Motor (looks like) stopped (but same tacho values might happen due to an INT/tacho error or due to slow RPM)
+            if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) {  // Check it at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
+                sa_ticks = 0;
+                rpm = 0;
+                motor::Brk::reset();  // Release break
+            } else {
+                motor_stopped_cycles++;
+            }
+        } else {
+            motor_stopped_cycles = 0;
+        }
+    }
+
+    if (sa_ticks) {
+        /* Calc RPM based on sa_ticks
+         * RPM = 60 / ( (1/TimClock) * TimPrescaler * (CapCompTicks * 4 (Cycles/360°) / InputPrescaler) ) =>
+         * RPM = (15 * TimClock * InputPrescaler) / (TimPrescaler * CapCompTicks)
+         */
+        rpm = (15 * SystemClock::Timer1 * SA_TIMER_INPUT_PRESCALER) / SA_TIMER_PRESCALER / sa_ticks;
+    }
+
+#ifdef PROTO_DEBUG
     uint32_t now = MILLIS;
-    /*if (now >= next_rpm_calc_millis) {
-        uint32_t diff_millis = RPM_CALC_CYCLE_MILLIS + (now - next_rpm_calc_millis);
-        next_rpm_calc_millis = now + RPM_CALC_CYCLE_MILLIS;
-        unsigned int diff_tacho = tacho - last_rpm_calc_tacho;  // FIXME: Handle overflow?!
-        last_rpm_calc_tacho = tacho;
-        rpm = (60000.0f / diff_millis) * diff_tacho / 4;
-    }*/
-
-    MODM_LOG_INFO << "now " << now << "ms, SA " << motor::SA::read() << ", sa_cycles_bak " << sa_cycles_bak << ", tacho " << (uint32_t)tacho << modm::endl
+    MODM_LOG_INFO << "now=" << now << "ms status.fault_code=" << status.fault_code
+                  << " vms_in=" << vm_switch::In::isSet()
+                  << " sa_tacho=" << (uint32_t)sa_tacho
+                  << " sa_ticks=" << (uint32_t)sa_ticks
+                  << " rpm=" << rpm << modm::endl
                   << modm::flush;
+#endif
 
     status.duty_cycle = duty;
-    status.tacho = tacho;
-    status.tacho_absolute = tacho;
+    status.tacho = sa_tacho;
+    status.tacho_absolute = sa_tacho;
 
     sendMessage(&status, sizeof(status));
 }
 
-// Interrupt Handler
+// Status Timer ISR
 MODM_ISR(TIM14) {
     Timer14::acknowledgeInterruptFlags(Timer14::InterruptFlag::Update);
-    send_status();
-}
-
-void commitMotorState() {
-    float new_duty;
-    if (status.fault_code) {
-        new_duty = 0.0f;
-    } else {
-        new_duty = duty_setpoint;
-    }
-    if (new_duty == duty) {
-        return;
-    }
-
-    if (new_duty == 0.0f) {  // Stop motor
-        motor::RS::set();    // !RS off
-        motor::Brk::set();   // TODO: Release BRK once RPM=0?
-        // digitalWrite(PIN_VMS_IN, LOW); // TODO: Switch off once RPM=0?
-    } else {                   // Start motor
-        vm_switch::In::set();  // TODO Wire & health check result
-        motor::Brk::reset();   // Release break
-        motor::RS::reset();    // !RS on
-    }
-    duty = new_duty;  // FIXME: Move to BRK release or RPM measurement?
+    update_status();
 }
 
 /**
@@ -243,7 +281,7 @@ void PacketReceived() {
             last_watchdog_millis = MILLIS;
             XescYFR4ControlPacket *packet = (XescYFR4ControlPacket *)pkt_buffer;
             duty_setpoint = packet->duty_cycle;
-            commitMotorState();
+            set_motor_state();
         } break;
         case XESCYFR4_MSG_TYPE_SETTINGS: {
             if (pkt_size != sizeof(struct XescYFR4SettingsPacket)) {
@@ -266,10 +304,9 @@ void PacketReceived() {
 /**
  * @brief Handle data in LowLevel-UART RX buffer and wait (buffer) for COBS end marker
  */
-void handleLowLevelRxBuffer() {
+void handle_host_rx_buffer() {
     uint8_t data;
     while (host_uart::Uart::read(data)) {
-        // MODM_LOG_DEBUG << "RX data " << data << modm::endl;
         buffer_rx[idx_buffer_rx] = data;
         idx_buffer_rx++;
         if (idx_buffer_rx >= COBS_BUFFER_SIZE) {  // Buffer is full, but no separator. Reset
@@ -279,12 +316,15 @@ void handleLowLevelRxBuffer() {
         }
 
         if (data == 0) {  // COBS end marker
+            /*
+#ifdef PROTO_DEBUG
             MODM_LOG_DEBUG << "buffer_rx[" << idx_buffer_rx << "]:";
             for (unsigned int i = 0; i < idx_buffer_rx; ++i) {
                 MODM_LOG_DEBUG << " " << buffer_rx[i];
             }
             MODM_LOG_DEBUG << modm::endl
                            << modm::flush;
+#endif */
             PacketReceived();
             idx_buffer_rx = 0;
             return;
@@ -292,16 +332,89 @@ void handleLowLevelRxBuffer() {
     }
 }
 
+/**
+ * @brief Handle ADC round-robin sampling
+ *
+ */
+void handleAdc() {
+    if ((ADC1->CR & ADC_CR_ADSTART) && !Adc1::isConversionFinished()) {  // ADC conversion already running and not finished yet
+        return;
+    }
+
+    switch (adc_rr) {
+        case 0:
+            Adc1::disableOversampling();  // VRef sampling result in wrong result if oversampled
+            vref = Adc1::readInternalVoltageReference();
+#ifdef PROTO_DEBUG
+            MODM_LOG_DEBUG << "adc_rr " << adc_rr << " VRef=" << vref << modm::endl;
+#endif
+            break;
+        case 1:
+            status.temperature_pcb = Adc1::readTemperature(vref);
+#ifdef PROTO_DEBUG
+            MODM_LOG_DEBUG << "adc_rr " << adc_rr << " Temp=" << status.temperature_pcb << modm::endl;
+#endif
+            break;
+        case 2:
+            if (Adc1::isConversionFinished()) {
+                uint16_t adcValue = Adc1::getValue();
+                double voltage = adcValue * vref / 4096;
+#ifdef PROTO_DEBUG
+                MODM_LOG_DEBUG << "adc_rr " << adc_rr << " cur_sense value=" << adcValue << " voltage=" << voltage << modm::endl;
+#endif
+            } else {
+                Adc1::enableOversampling(Adc1::OversampleRatio::x16, Adc1::OversampleShift::Div1);
+                Adc1::startConversion();
+                return;
+            }
+            break;
+        case 3:
+            if (Adc1::isConversionFinished()) {
+                uint16_t adcValue = Adc1::getValue();
+                double voltage = adcValue * vref / 4096;
+#ifdef PROTO_DEBUG
+                MODM_LOG_DEBUG << "adc_rr " << adc_rr << " cur_sense_2 value=" << adcValue << " voltage=" << voltage << modm::endl;
+#endif
+            } else {
+                Adc1::startConversion();
+                return;
+            }
+            break;
+    }
+
+    adc_rr = (adc_rr + 1) % 4;
+}
+
+/**
+ * @brief ISR execute when a Capture Compare interruption is triggered via motor::sa pin.
+ */
+MODM_ISR(TIM1_CC) {
+    static uint16_t last_cc_value = 0;
+    uint16_t temp_cc_value = Timer1::getCompareValue<motor::SA::Ch4>();
+    uint32_t temp_ticks;
+
+    Timer1::acknowledgeInterruptFlags(Timer1::InterruptFlag::CaptureCompare4);
+    sa_tacho++;
+
+    if (Timer1::getInterruptFlags() & Timer1::InterruptFlag::Update) {
+        Timer1::acknowledgeInterruptFlags(Timer1::InterruptFlag::Update);
+        // MODM_LOG_DEBUG << "UPD" << modm::endl;
+        temp_ticks = temp_cc_value + (0xffff - last_cc_value);
+    } else {
+        temp_ticks = temp_cc_value - last_cc_value;
+    }
+    // MODM_LOG_DEBUG << temp_cc_value << "-" << last_cc_value << "=" << (uint16_t)temp_ticks << modm::endl;
+    // MODM_LOG_DEBUG << (uint16_t)sa_ticks << modm::endl;
+
+    last_cc_value = temp_cc_value;
+    if (temp_ticks < SA_TIMER_MIN_TICKS) {
+        return;
+    }
+    sa_ticks = temp_ticks;
+}
+
 int main() {
     Board::initialize();
-
-    // Initialize prototyping-UART for MODM_LOG_*
-    proto_uart::Uart::connect<proto_uart::Tx::Tx, proto_uart::Rx::Rx>();
-    proto_uart::Uart::initialize<SystemClock, 460800_Bd>();
-
-    MODM_LOG_INFO << modm::endl
-                  << modm::endl
-                  << "Board initialized" << modm::endl;
 
     // Check NRST_MODE if GPIO mode (NRST pin disabled)
     if (!(FLASH->OPTR & FLASH_OPTR_NRST_MODE_1) || (FLASH->OPTR & FLASH_OPTR_NRST_MODE_0)) {
@@ -309,30 +422,55 @@ int main() {
         for (;;);
     }
 
-    // Initialize Host (LowLevel) UART communication
-    // TODO: Is there a way to use a INT driven onDataReceived() handler?
-    host_uart::Uart::connect<host_uart::Tx::Tx, host_uart::Rx::Rx>();
-    host_uart::Uart::initialize<SystemClock, 115200_Bd>();
+    // Now thats ensured that NRST is disabled...
+    vm_switch::DiagEnable::set();  // VM-Switch diagnostics enable
+
+    /*
+        // Init ADC1 with oversampling
+        Adc1::connect<AdcCurSense::In2, AdcCurSense2::In1>();
+        Adc1::initialize<Board::SystemClock, Adc1::ClockMode::Asynchronous, 375000>();
+        Adc1::setResolution(Adc1::Resolution::Bits12);
+        Adc1::setRightAdjustResult();
+        Adc1::setSampleTime(Adc1::SampleTime::Cycles160_5);
+        //Adc1::disableFreeRunningMode();
+    */
+
+    // Prepare status msg
+    status.message_type = XESCYFR4_MSG_TYPE_STATUS;
+    status.fw_version_major = 0;
+    status.fw_version_minor = 2;
+    status.direction = 0;  // Our motor has only one direction
+
+    // SA (Hall) input - Capture/Compare timer
+    Timer1::connect<motor::SA::Ch4>();
+    Timer1::enable();
+    Timer1::setMode(Timer1::Mode::UpCounter);
+    Timer1::setPrescaler(SA_TIMER_PRESCALER);
+    Timer1::setOverflow(0xFFFF);
+    Timer1::configureInputChannel<motor::SA::Ch4>(Timer1::InputCaptureMapping::InputOwn,
+                                                  Timer1::InputCapturePrescaler::Div1,  // has to match SA_TIMER_INPUT_PRESCALER
+                                                  Timer1::InputCapturePolarity::Rising, 2);
+    Timer1::enableInterrupt(Timer1::Interrupt::CaptureCompare4);
+    Timer1::enableInterruptVector(Timer1::Interrupt::CaptureCompare4, true, 500);  // Adapt filter when changing prescaler
+    Timer1::applyAndReset();
+    Timer1::start();
 
     // Status Timer
     Timer14::enable();
     Timer14::setMode(Timer14::Mode::UpCounter);
-    Timer14::setPeriod<Board::SystemClock>(20ms);
-    Timer14::applyAndReset();
+    Timer14::setPeriod<Board::SystemClock>(STATUS_CYCLE);
     Timer14::enableInterrupt(Timer14::Interrupt::Update);
     Timer14::enableInterruptVector(true, 26);
+    Timer14::applyAndReset();
+    Timer14::start();
 
     // LED blink code "Boot up successful"
     ledseq_green.blink({.limit_blink_cycles = 3, .fulfill = true});  // Default = 200ms ON, 200ms OFF
     ledseq_red.blink({.limit_blink_cycles = 3, .fulfill = true});    // Default = 200ms ON, 200ms OFF
 
-    // Now that all is set-up and NRST is also disabled
-    vm_switch::In::setOutput(modm::Gpio::High);          // VM-Switch, VMC = on
-    vm_switch::DiagEnable::setOutput(modm::Gpio::High);  // VM-Switch diagnostics enable
-    Timer14::start();
-
     while (true) {
-        handleLowLevelRxBuffer();
+        handle_host_rx_buffer();
+        // handleAdc();
         ledseq_green.loop();
         ledseq_red.loop();
     }

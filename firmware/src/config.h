@@ -1,15 +1,27 @@
 #pragma once
 
+// Enable for debug logging on proto UART2
+#define PROTO_DEBUG
+#define PROTO_DEBUG_BAUD 460800_Bd
+#undef MODM_LOG_LEVEL
+#define MODM_LOG_LEVEL modm::log::DEBUG  // ERROR, WARNING, INFO, DEUG
+
+#define STATUS_CYCLE 20ms
+#define NUM_STATUS_CYCLES_MOTOR_STOPPED 4    // Number of STATUS_CYCLES before motor get declared as stopped (if tacho doesn't changed)
 #define WATCHDOG_TIMEOUT_MILLIS 500
 
 // Time to keep motor controller in fault once a fault occurs
 #define MIN_FAULT_TIME_MILLIS 2000
 
-#define NUM_SA_CYCLES_PER_TURN 4
-#define RPM_CALC_CYCLE_MILLIS 200  // How often to calc RPMs. Need to be high enough to catch enough SA cycles
+/* SA (Hall) Capture-Compare-Timer, RPM-Calc
+ * RPM = 60 / ( (1/TimClock) * TimPrescaler * (CapCompTicks * 4 (Cycles/360°) / InputPrescaler) ) =>
+ * RPM = (15 * TimClock * InputPrescaler) / (TimPrescaler * CapCompTicks)
+ */
+#define SA_TIMER_INPUT_PRESCALER 1
+#define SA_TIMER_PRESCALER 120
+#define SA_TIMER_MIN_TICKS 500  // Minimum possible tick size
 
-// Timer
-#define TIMER_STATUS TIM14
+// ----- old ----
 
 // Analog read resolution
 #define LL_ADC_RESOLUTION LL_ADC_RESOLUTION_12B
