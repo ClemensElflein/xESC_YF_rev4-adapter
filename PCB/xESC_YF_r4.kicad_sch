@@ -6739,6 +6739,16 @@
 		)
 		(uuid "0ee10b43-1aa1-4f4e-a3bb-9001ee18feb4")
 	)
+	(text "Alt. 47k"
+		(exclude_from_sim no)
+		(at 204.47 118.618 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "15759882-e857-4ae9-8d31-0af15e5e7e99")
+	)
 	(text "Blade-Motor\nSUMEC Type ??2727, 24VDC, 30W, 3500r/min\n-----------------------------\nRD = +24V\nBK = GND\nGN = SA (SA Hall Output) [TTL] ^{*1}\nYW = ~{RS} (Rotor?-/Rapid?-Start) ^{*2}\nBE = BRK (Break) [Analog] ^{*3}\n\n^{*1}: 1 Cycle = 90°, 4.3ms/Cycle @ 24V =\n   3488 rpm\n^{*2}: Need a new ~{RS} signal after BRK\n^{*3}: As higher the voltage as harder the\n   break (Tested up to 5V)"
 		(exclude_from_sim no)
 		(at 71.628 31.242 0)
@@ -6749,6 +6759,26 @@
 			(justify left)
 		)
 		(uuid "89ec3c68-34ce-4b04-808b-042a9ff56f0a")
+	)
+	(text "int. PullUp =\nAuto-Retry?"
+		(exclude_from_sim no)
+		(at 132.334 42.164 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "989c0f40-1329-4258-b582-f55495ec3216")
+	)
+	(text "Alt. remove"
+		(exclude_from_sim no)
+		(at 231.14 118.364 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "ba7ff105-4479-43f4-a664-9b5c5d970ff5")
 	)
 	(text "!!! GN/BK need to be exchanged \non Mow-Motor-Plug or Cable !!!\n\nDetectable via current correlation:\nWith a wrong plug (GN/BK not exchanged),\npulling SA output to 0 decrease current\nfrom 19mA to 12mA, which might be detectable.\nWhereas a correct plug (GN/BK got exchanged),\npulling SA output to 0 increase current\nonly from 11.3mA to 11.6mA.\n\n"
 		(exclude_from_sim no)
@@ -9507,7 +9537,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "47k"
+		(property "Value" "1k"
 			(at 206.756 121.6914 0)
 			(effects
 				(font
@@ -9543,7 +9573,7 @@
 				(hide yes)
 			)
 		)
-		(property "Stock_PN" "R-805-47K-.125W-1%"
+		(property "Stock_PN" "R-805-1K-.125W-1%"
 			(at 212.09 120.65 0)
 			(effects
 				(font
@@ -13099,9 +13129,9 @@
 		(at 224.79 120.65 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom no)
+		(in_bom yes)
 		(on_board yes)
-		(dnp yes)
+		(dnp no)
 		(uuid "d6bbe8f9-88d9-4c69-845c-fc2a88a10c14")
 		(property "Reference" "R2"
 			(at 226.568 119.4816 0)
