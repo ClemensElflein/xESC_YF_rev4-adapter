@@ -22,43 +22,32 @@ jobs:
           verbose: 1
 
   firmware:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    container:
+      image: ghcr.io/modm-ext/modm-build-cortex-m:2023-03-12
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Cache pip
-        uses: actions/cache@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Cache PlatformIO
-        uses: actions/cache@v4
-        with:
-          path: ~/.platformio
-          key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install PlatformIO
+          submodules: 'recursive'
+      - name: Fix Git permission/ownership problem
         run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade platformio
-
-      - name: Run PlatformIO
-        run: pio run -d firmware
-
+          git config --global --add safe.directory /__w/modm/modm
+      - name: Update lbuild
+        run: |
+          pip3 install --upgrade --upgrade-strategy=eager modm
+      - name: Run lbuild
+        run: |
+          cd firmware/src
+          lbuild build
+      - name: Compile firmware
+        run: |
+          scons build bin
       - name: Copy Artifacts
         run: |
           mkdir artifacts/
-          cp firmware/.pio/build/STM32C011F6_V1x/firmware.bin ./artifacts/firmware_xesc_yf_rev4.bin
-          cp firmware/.pio/build/STM32C011F6_Disable_NRST/firmware.bin ./artifacts/firmware_disable_nrst.bin
-
+          cp ../build/scons-release/xESC_YF_rev4-Firmware.elf ./artifacts/firmware_xesc_yf_rev4.elf
+          cp ../build/scons-release/xESC_YF_rev4-Firmware.bin ./artifacts/firmware_xesc_yf_rev4.bin
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
