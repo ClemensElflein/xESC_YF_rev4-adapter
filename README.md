@@ -69,32 +69,40 @@ In addition to this adapter, it's nevertheless **required to exchange two cables
 
 **It's mandatory to cross the green and black mow-motor-cables!**
 
+> [!WARNING]  
+> Do **not** simply trust the cable colors!<br>
+> Check the image and validate if your
+> cables do have the same colors! If not adapt accordingly
+
 Either exchange the pins within the plug, or do it the lazy way like me, with a luster terminal.
 The latter has the advantage that you immediately see that you already crossed green/black.
 
 ## Prerequisites
 
 * You need an ST-Link debugger/programmer, like one of the cheap "ST-Link V2" probes from one of the big online retailer.
-* [STLINK Tools](https://github.com/stlink-org/stlink) >= v1.8.0 (earlier versions do **not** support our MCU)
-* As of writing, your openmower image has to be on edge version >= commit [0bfd489](https://github.com/ClemensElflein/open_mower_ros/commit/0bfd489401b3e659d183e6c1f9b557cb0d59d3c1) which happen on 2024-07-04
+* [STLINK Tools](https://github.com/stlink-org/stlink) >= v1.8.0 (earlier versions do **not** support the used STM32C0x MCU)
+* As of writing, your openmower image has to be on edge version >= commit [0bfd489](https://github.com/ClemensElflein/open_mower_ros/commit/0bfd489401b3e659d183e6c1f9b557cb0d59d3c1) which happened on 2024-07-04
 
 ## Installation
 
-1. The compiled firmware can be found in the [Actions](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/actions) section. Click the one you're intersted in (newest or tagged), scroll down to 'Artifacts', download and unzip. 
+1. The compiled firmware can be found in the [Actions](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/actions) section. Click the one you're intersted in (newest or tagged), scroll down to 'Artifacts', download and unzip.
 2. Connect your ST-Link probe to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
-3. If you didn't disabled NRST pin on this board before, you need to flash a special 'Disable NRST' firmware **one time** via:
-   ```sh
-   st-flash write firmware_disable_nrst.bin 0x08000000
-   ```
-   When flashing this 'Disable NRST' firmware, the LEDs should show the following sequence:<br>
-   "green + red" whereas red indicated the NRST pin doesn't got disabled yet, immediately followed by green which indicate a successful disabled-NRST-pin flash.<br>
-   2 seconds later the MCU should reboot and show<br> 
-   "green", which indicate that NRST is already disabled.
+
 4. Flash the adapter:
    ```sh
-   st-flash write firmware_xesc_yf_rev4.bin 0x08000000
+   st-flash --reset write firmware_xesc_yf_rev4.bin 0x08000000
    ```
-   When done, st-flash should report 'Flash written and verified! jolly good!' (or similar)
+   When done, st-flash should report 'Flash written and verified! jolly good!' (or similar) and immediately reboot.<br>
+
+   > [!WARNING]  
+   > Do not unplug now!
+   
+   On first firmware boot, it need to flash some settings to the MCU. You'll see some blink codes.<br>
+   Do NOT unplug till you see 3 simultaneous blinks of the green+red LED (=success), following of a quick blink of the red LED (=no motor connected) as well as a normal green blink (=ROS not connected).<br>
+   The whole procedure will only take about 10 seconds.
+
+   If the board doesn't come up with blink signs, unplug and replug it. But once you see blink signs, do **not** unplug it before getting the described LED codes of the previous paragraph.   
+
 5. Adapt your mower_config. Here's the relevant section out of mower_config.sh.example:
     ```
    # Select your ESC type
@@ -117,31 +125,37 @@ The latter has the advantage that you immediately see that you already crossed g
 
 <table>
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
-  <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
+  <tr><td></td><td>5 * blink</td><td>NRST Pin not yet disabled. <b>Keep board powered</b> and watch for further LED codes</td></tr>
+  <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>  <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
   <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
   <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>
   <!-- <tr><td>flash</td><td></td><td>SA tacho flash for 90° rotation</td></tr> -->
-  <tr><td></td><td>on</td><td>Disable NRST firmware not applied. See <a href="#installation">Installation</a></td></tr>
-  <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected)</td></tr>
+  <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected).<br> <b>WARNING:</b> Do not connect the motor while the adapter is powered!</td></tr>
   <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
   <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
 </table>
 
 
-<!-- USAGE EXAMPLES -->
-<!--
-## Usage
+## Self-Compile
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+This project is build with [modm](https://modm.io). You need to install the required toolchain as described in their [Installation](https://modm.io/guide/installation/) section, before going on.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+Once done:
+
+1. Clone this repository (inclusive submodules):<br>
+  `git clone --recurse-submodules https://github.com/ClemensElflein/xESC_YF_rev4-adapter.git`
+2. Change into the project source directory:<br>
+  `cd xESC_YF_rev4-adapter/firmware/src`
+3. Build the modm library files:<br>
+  `lbuild build`
+4. Compile the firmware binary:<br>
+  `scons bin`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
--->
 
 
-<!-- ROADMAP -->
+
 ## Roadmap
 
 (Ordered by priority)
@@ -153,11 +167,12 @@ _For more examples, please refer to the [Documentation](https://example.com)_
     - [x] Generic motor control (start, stop, break)
     - [x] Read SA, math RPM
     - [x] Open VMC (no motor connected) detection
-    - [x] VMC-short and thermal error handling of VM-Switch
+    - [ ] ~~VMC-short and thermal error handling of VM-Switch~~
+    - [x] Disable NRST pin functionality
     - [ ] Motor current consumption
     - [ ] Stock motor (wrong) cabling detection
     - [ ] STM32 bootloader / flash via UART support
-    - [ ] Drive LEDs by PWM as one get blind when watching LED codes, but will cost approx. 2.5k of flash
+    - [ ] ~~Drive LEDs by PWM as one get blind when watching LED codes, but will cost approx. 2.5k of flash~~
 - [x] ROS driver
     - [x] xesc_ros::xesc_yfr4
 
@@ -169,6 +184,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                          |
   | ------- | :----------: | --------------------------------------------- |
+  | 0.2.0   |  2024-08-??  | - Switch from Arduino to modm lib<br>- Integrated flash procedure to disable-NRST       |
   | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection       |
   | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break |
 
