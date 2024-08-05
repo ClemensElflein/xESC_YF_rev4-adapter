@@ -85,13 +85,6 @@ jobs:
         run: |
           sha256sum release/firmware_xesc-yf-rev4.zip > release/firmware_xesc-yf-rev4.sha256
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        if: ${{ false }}
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          files: release/*
-
       - name: Deploy release
         uses: peaceiris/actions-gh-pages@v4
         if: ${{ false }}
@@ -138,14 +131,3 @@ jobs:
         shell: bash
         run: |
           sha256sum firmware_xesc-yf-rev4.zip > firmware_xesc-yf-rev4.sha256
-
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        if: |
-          github.event_name != 'pull_request' &&
-          ${{ false }}
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          title: "Latest Firmware"
-          automatic_release_tag: "latest"
-          prerelease: true
-          files: firmware_xesc-yf-rev4.{sha256,zip}
