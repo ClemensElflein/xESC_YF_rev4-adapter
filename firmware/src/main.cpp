@@ -15,9 +15,7 @@
 // SOFTWARE.
 //
 
-#include <modm/driver/adc/adc_sampler.hpp>
 #include <modm/platform.hpp>
-#include <modm/processing/timer.hpp>
 
 #include "COBS.h"
 #include "LedSeq.hpp"
