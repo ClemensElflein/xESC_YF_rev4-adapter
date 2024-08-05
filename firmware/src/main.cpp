@@ -27,6 +27,7 @@
 #undef CRC
 #endif
 #include "CRC.h"
+#include "disable_nrst.h"
 #include "xesc_yfr4_datatypes.h"
 
 using namespace Board;
@@ -175,9 +176,9 @@ void set_motor_state() {
     if (new_duty == duty) {
         return;
     }
-    if (new_duty == 0.0f) {  // Stop motor
-        motor::RS::set();    // !RS off
-        motor::Brk::set();   // Break
+    if (new_duty == 0.0f) {   // Stop motor
+        motor::RS::set();     // !RS off
+        motor::Brk::set();    // Break
     } else {                  // Start motor
         motor::Brk::reset();  // Release break
         motor::RS::reset();   // !RS on
@@ -415,13 +416,7 @@ MODM_ISR(TIM1_CC) {
 
 int main() {
     Board::initialize();
-
-    // Check NRST_MODE if GPIO mode (NRST pin disabled)
-    if (!(FLASH->OPTR & FLASH_OPTR_NRST_MODE_1) || (FLASH->OPTR & FLASH_OPTR_NRST_MODE_0)) {
-        LedRed::set();  // LED red = on
-        for (;;);
-    }
-
+    disable_nrst();  // Check NRST pin, flash if wrong and reset
     // Now thats ensured that NRST is disabled...
     vm_switch::DiagEnable::set();  // VM-Switch diagnostics enable
 

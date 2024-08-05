@@ -95,9 +95,16 @@ class LedSeq {
         _next(props);
     }
 
-    void loop(void) {
+    /**
+     * @brief Generic loop() function for sequence processing.
+     * Call as often as possible and as less as required (for a visual LED feedback).
+     *
+     * @return true if sequence got processed
+     * @return false if all sequences got processed
+     */
+    bool loop(void) {
         if (_active_state.state == LEDSEQ_STATE_UNDEF && _next_state.state == LEDSEQ_STATE_UNDEF)  // Nothing to do
-            return;
+            return false;
 
         uint32_t now = modm::Clock::now().time_since_epoch().count();
 
@@ -111,7 +118,7 @@ class LedSeq {
         }
 
         if (now < _active_state.next_state_cycle_millis)
-            return;
+            return true;
 
         switch (_active_state.props.mode) {
             case LEDSEQ_MODE_ON:
@@ -158,5 +165,6 @@ class LedSeq {
                         break;
                 }
         }
+        return true;
     }
 };
