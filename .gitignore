@@ -25,12 +25,13 @@ fp-info-cache
 *.ses
 
 # Exported BOM files
-*.xml
 *.csv
 
 # PCB Production files
 PCB/Gerber/
 PCB/production/backups/
+
+# Firmware / modm
 firmware/build/
 firmware/src/modm/
 firmware/src/SConstruct
