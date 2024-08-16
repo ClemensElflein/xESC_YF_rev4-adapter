@@ -176,6 +176,7 @@ Once done:
     - [x] Disable NRST pin functionality
     - [x] Motor current consumption
     - [x] PCB temperature (junction temp of STM)
+    - [ ] Support shutdown signal
     - [ ] Stock motor (wrong) cabling detection
     - [ ] STM32 bootloader / flash via UART support
     - [ ] ~~Drive LEDs by PWM as one get blind when watching LED codes, but will cost approx. 2.5k of flash~~
