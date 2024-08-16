@@ -107,8 +107,8 @@ using RS = GpioOutputA6;   // Motor !RS (Rapid/Rotor Start) (LowActive)
 
 /// @ingroup modm_board_xescyfr4
 /// @{
-typedef GpioInputA1 AdcCurSense2;
 typedef GpioInputA2 AdcCurSense;
+typedef GpioInputA1 AdcCurSense2;
 
 #ifdef PROTO_DEBUG
 // Create an IODeviceWrapper around the Uart Peripheral we want to use
@@ -145,8 +145,8 @@ initialize() {
     proto_uart::Uart::connect<proto_uart::Tx::Tx, proto_uart::Rx::Rx>();
     proto_uart::Uart::initialize<SystemClock, PROTO_DEBUG_BAUD>();
     MODM_LOG_INFO << modm::endl
-                  << modm::endl
-                  << "Board initialized" << modm::endl;
+                  << "Board initialized" << modm::endl
+                  << modm::flush;
 #endif
 }
 /// @}

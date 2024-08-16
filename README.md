@@ -151,6 +151,11 @@ Once done:
   `lbuild build`
 4. Compile the firmware binary:<br>
   `scons bin`
+5. Flash firmware:<br>
+  For this, a specific OpenOCD version is required. Set it by:<br>
+  `export MODM_OPENOCD_BINARY=../packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd`<br>
+  Afterwards flash the firmware via:<br>
+  `scons program`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -169,7 +174,8 @@ Once done:
     - [x] Open VMC (no motor connected) detection
     - [ ] ~~VMC-short and thermal error handling of VM-Switch~~
     - [x] Disable NRST pin functionality
-    - [ ] Motor current consumption
+    - [x] Motor current consumption
+    - [x] PCB temperature (junction temp of STM)
     - [ ] Stock motor (wrong) cabling detection
     - [ ] STM32 bootloader / flash via UART support
     - [ ] ~~Drive LEDs by PWM as one get blind when watching LED codes, but will cost approx. 2.5k of flash~~
@@ -184,7 +190,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                          |
   | ------- | :----------: | --------------------------------------------- |
-  | 0.2.0   |  2024-08-??  | - Switch from Arduino to modm lib<br>- Integrated flash procedure to disable-NRST       |
+  | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature       |
   | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection       |
   | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break |
 

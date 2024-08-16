@@ -24,6 +24,7 @@
 #ifdef CRC  // FIXME remove modm/STM32 CRC or use it
 #undef CRC
 #endif
+#include "AdcSampler.hpp"
 #include "CRC.h"
 #include "disable_nrst.h"
 #include "xesc_yfr4_datatypes.h"
@@ -46,10 +47,8 @@ static unsigned int idx_buffer_rx = 0;
 static uint8_t buffer_tx[COBS_BUFFER_SIZE];  // Serial TX buffer for COBS encoded messages
 COBS cobs;
 
-// ADC
-uint8_t adc_rr = 0;            // Analog round robin counter
-uint16_t vref;                 // VRef of ADC
-double cur_sense, cur_sense2;  // Current Sense ADC values (mA)
+// Misc
+std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {};  // Definition of AdcSampler's private _data buffer (initialized with 0)
 
 volatile uint32_t last_watchdog_millis = 0;
 volatile uint32_t last_fault_millis = 0;
@@ -84,30 +83,28 @@ void sendMessage(void *message, size_t size) {
     data_pointer[size - 1] = (crc >> 8) & 0xFF;
     data_pointer[size - 2] = crc & 0xFF;
 
-    /*
-    #ifdef PROTO_DEBUG
-        MODM_LOG_DEBUG << "before encoding " << size << "byte:" << modm::endl;
-        uint8_t *temp = data_pointer;
-        for (size_t i = 0; i < size; i++) {
-            MODM_LOG_DEBUG << *temp << " ";
-            temp++;
-        }
-        MODM_LOG_DEBUG << modm::endl;
-    #endif */
+#ifdef PROTO_DEBUG_HOST_TX
+    MODM_LOG_DEBUG << "before encoding " << size << "byte:" << modm::endl;
+    uint8_t *temp = data_pointer;
+    for (size_t i = 0; i < size; i++) {
+        MODM_LOG_DEBUG << *temp << " ";
+        temp++;
+    }
+    MODM_LOG_DEBUG << modm::endl;
+#endif
 
     // Encode message
     size_t encoded_size = cobs.encode((uint8_t *)message, size, buffer_tx);
     buffer_tx[encoded_size] = 0;
     encoded_size++;
 
-    /*
-    #ifdef PROTO_DEBUG
-        MODM_LOG_DEBUG << "encoded size " << encoded_size << "byte:" << modm::endl;
-        for (size_t i = 0; i < encoded_size; i++) {
-            MODM_LOG_DEBUG << buffer_tx[i] << " ";
-        }
-        MODM_LOG_DEBUG << modm::endl;
-    #endif */
+#ifdef PROTO_DEBUG_HOST_TX
+    MODM_LOG_DEBUG << "encoded size " << encoded_size << "byte:" << modm::endl;
+    for (size_t i = 0; i < encoded_size; i++) {
+        MODM_LOG_DEBUG << buffer_tx[i] << " ";
+    }
+    MODM_LOG_DEBUG << modm::endl;
+#endif
 
     // write() byte as long as the TX buffer isn't full
     for (size_t i = 0; i < encoded_size;)
@@ -225,18 +222,30 @@ void update_status() {
     }
 
 #ifdef PROTO_DEBUG
-    uint32_t now = MILLIS;
-    MODM_LOG_INFO << "now=" << now << "ms status.fault_code=" << status.fault_code
-                  << " vms_in=" << vm_switch::In::isSet()
-                  << " sa_tacho=" << (uint32_t)sa_tacho
-                  << " sa_ticks=" << (uint32_t)sa_ticks
-                  << " rpm=" << rpm << modm::endl
-                  << modm::flush;
+    MODM_LOG_INFO << "now=" << MILLIS << "ms status.fault_code=" << status.fault_code;
+#ifdef PROTO_DEBUG_MOTOR
+    MODM_LOG_DEBUG << " sa_tacho=" << (uint32_t)sa_tacho
+                   << " sa_ticks=" << (uint32_t)sa_ticks
+                   << " rpm=" << rpm;
+#endif
+#ifdef PROTO_DEBUG_ADC
+    MODM_LOG_DEBUG << " VRef=" << AdcSampler::getInternalVref_u() << "mV, " << AdcSampler::getInternalVref_f() << "mV"
+                   << " Temp=" << AdcSampler::getInternalTemp()
+                   << " CurrentSense=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) << "V"
+                   << ", " << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT) << "A"
+                   << " CurrentSense_2=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense2) << "V"
+                   << ", " << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense2) / (CUR_SENSE_2_GAIN * R_SHUNT) << "A";
+#endif
+    MODM_LOG_INFO
+        << modm::endl
+        << modm::flush;
 #endif
 
     status.duty_cycle = duty;
     status.tacho = sa_tacho;
     status.tacho_absolute = sa_tacho;
+    status.temperature_pcb = AdcSampler::getInternalTemp();
+    status.current_input = AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT);
 
     sendMessage(&status, sizeof(status));
 }
@@ -315,73 +324,19 @@ void handle_host_rx_buffer() {
         }
 
         if (data == 0) {  // COBS end marker
-            /*
-#ifdef PROTO_DEBUG
+#ifdef PROTO_DEBUG_HOST_RX
             MODM_LOG_DEBUG << "buffer_rx[" << idx_buffer_rx << "]:";
             for (unsigned int i = 0; i < idx_buffer_rx; ++i) {
                 MODM_LOG_DEBUG << " " << buffer_rx[i];
             }
             MODM_LOG_DEBUG << modm::endl
                            << modm::flush;
-#endif */
+#endif
             PacketReceived();
             idx_buffer_rx = 0;
             return;
         }
     }
-}
-
-/**
- * @brief Handle ADC round-robin sampling
- *
- */
-void handleAdc() {
-    if ((ADC1->CR & ADC_CR_ADSTART) && !Adc1::isConversionFinished()) {  // ADC conversion already running and not finished yet
-        return;
-    }
-
-    switch (adc_rr) {
-        case 0:
-            Adc1::disableOversampling();  // VRef sampling result in wrong result if oversampled
-            vref = Adc1::readInternalVoltageReference();
-#ifdef PROTO_DEBUG
-            MODM_LOG_DEBUG << "adc_rr " << adc_rr << " VRef=" << vref << modm::endl;
-#endif
-            break;
-        case 1:
-            status.temperature_pcb = Adc1::readTemperature(vref);
-#ifdef PROTO_DEBUG
-            MODM_LOG_DEBUG << "adc_rr " << adc_rr << " Temp=" << status.temperature_pcb << modm::endl;
-#endif
-            break;
-        case 2:
-            if (Adc1::isConversionFinished()) {
-                uint16_t adcValue = Adc1::getValue();
-                double voltage = adcValue * vref / 4096;
-#ifdef PROTO_DEBUG
-                MODM_LOG_DEBUG << "adc_rr " << adc_rr << " cur_sense value=" << adcValue << " voltage=" << voltage << modm::endl;
-#endif
-            } else {
-                Adc1::enableOversampling(Adc1::OversampleRatio::x16, Adc1::OversampleShift::Div1);
-                Adc1::startConversion();
-                return;
-            }
-            break;
-        case 3:
-            if (Adc1::isConversionFinished()) {
-                uint16_t adcValue = Adc1::getValue();
-                double voltage = adcValue * vref / 4096;
-#ifdef PROTO_DEBUG
-                MODM_LOG_DEBUG << "adc_rr " << adc_rr << " cur_sense_2 value=" << adcValue << " voltage=" << voltage << modm::endl;
-#endif
-            } else {
-                Adc1::startConversion();
-                return;
-            }
-            break;
-    }
-
-    adc_rr = (adc_rr + 1) % 4;
 }
 
 /**
@@ -414,19 +369,12 @@ MODM_ISR(TIM1_CC) {
 
 int main() {
     Board::initialize();
-    disable_nrst();  // Check NRST pin, flash if wrong and reset
+
+    disable_nrst();  // Check NRST pin. Will flash if wrong and reset
     // Now thats ensured that NRST is disabled...
     vm_switch::DiagEnable::set();  // VM-Switch diagnostics enable
 
-    /*
-        // Init ADC1 with oversampling
-        Adc1::connect<AdcCurSense::In2, AdcCurSense2::In1>();
-        Adc1::initialize<Board::SystemClock, Adc1::ClockMode::Asynchronous, 375000>();
-        Adc1::setResolution(Adc1::Resolution::Bits12);
-        Adc1::setRightAdjustResult();
-        Adc1::setSampleTime(Adc1::SampleTime::Cycles160_5);
-        //Adc1::disableFreeRunningMode();
-    */
+    AdcSampler::init();  // Init & run AdcSampler
 
     // Prepare status msg
     status.message_type = XESCYFR4_MSG_TYPE_STATUS;
@@ -463,7 +411,6 @@ int main() {
 
     while (true) {
         handle_host_rx_buffer();
-        // handleAdc();
         ledseq_green.loop();
         ledseq_red.loop();
     }
