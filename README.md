@@ -152,7 +152,7 @@ Once done:
 4. Compile the firmware binary:<br>
   `scons bin`
 5. Flash firmware:<br>
-  For this, a specific OpenOCD version is required. Set it by:<br>
+  For this, a specific [xPack OpenOCD](https://xpack-dev-tools.github.io/openocd-xpack/) version is required. Install it and the set the required environment var i.e. by:<br>
   `export MODM_OPENOCD_BINARY=../packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd`<br>
   Afterwards flash the firmware via:<br>
   `scons program`
