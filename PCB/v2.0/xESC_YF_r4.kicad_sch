@@ -6749,7 +6749,7 @@
 		)
 		(uuid "15759882-e857-4ae9-8d31-0af15e5e7e99")
 	)
-	(text "TODO:\n-----\n- Add Rs to UART2\n- Add GND to UART2 connector\n- Move VMS_FAULT to free (non-NRST) GPIO\n- Add Pull-Up to INA\n- Change to Levelshifter IC?\n- Drop switchable INA gain?\n- Add \"Messpoint\" to VMS\n  (for easier R_SHUNT measurement)"
+	(text "TODO:\n-----\n- Add Rs to UART2\n- Add GND to UART2 connector\n- Move VMS_FAULT to free (non-NRST) GPIO\n- Add Pull-Up to INA\n- Change to Levelshifter IC?\n- Drop switchable INA gain\n- Increase R_Shunt for:\n  Main range = 10mA -> 500mA\n  Max = 1.5A"
 		(exclude_from_sim no)
 		(at -38.1 21.59 0)
 		(effects
@@ -6759,6 +6759,30 @@
 			(justify left)
 		)
 		(uuid "20dee4d7-e533-4634-9646-cc4c162a989e")
+	)
+	(text "V_{Out}@Idle = 19mV\nV_{Out}@3500rpm = 530mV"
+		(exclude_from_sim no)
+		(at 175.768 75.692 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(color 194 0 194 1)
+			)
+			(justify left)
+		)
+		(uuid "44ccda98-3e5f-4ed8-882a-b7444fb2cb95")
+	)
+	(text "V_{Shunt}@Idle = 0,7mV\nV_{Shunt}@3500rpm = 13mV"
+		(exclude_from_sim no)
+		(at 232.41 75.692 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(color 194 0 194 1)
+			)
+			(justify left)
+		)
+		(uuid "4be5e5d3-b079-4570-bbae-e161134dbc15")
 	)
 	(text "Blade-Motor\nSUMEC Type ??2727, 24VDC, 30W, 3500r/min\n-----------------------------\nRD = +24V\nBK = GND\nGN = SA (SA Hall Output) [TTL] ^{*1}\nYW = ~{RS} (Rotor?-/Rapid?-Start) ^{*2}\nBE = BRK (Break) [Analog] ^{*3}\n\n^{*1}: 1 Cycle = 90°, 4.3ms/Cycle @ 24V =\n   3488 rpm\n^{*2}: Need a new ~{RS} signal after BRK\n^{*3}: As higher the voltage as harder the\n   break (Tested up to 5V)"
 		(exclude_from_sim no)
@@ -7893,7 +7917,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "220"
+		(property "Value" "180"
 			(at 95.758 171.323 0)
 			(effects
 				(font
@@ -7929,7 +7953,7 @@
 				(hide yes)
 			)
 		)
-		(property "Digikey" "311-220HRCT-ND"
+		(property "Part Number" "RC0603FR-07180RL"
 			(at 93.98 170.18 0)
 			(effects
 				(font
@@ -7938,16 +7962,7 @@
 				(hide yes)
 			)
 		)
-		(property "Part Number" "RC0603FR-07220RL"
-			(at 93.98 170.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Stock_PN" "R-603-220-.1W-1%"
+		(property "Stock_PN" "R-603-180-.1W-1%"
 			(at 93.98 170.18 0)
 			(effects
 				(font
