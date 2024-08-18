@@ -2,32 +2,35 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "cortex-debug",
-            "type": "cortex-debug",
+            "name": "Debug (Release, Scons, STM32C011F6P6)",
+            "cwd": "${workspaceFolder}/firmware/src",
+            "executable": "../build/scons-release/xESC_YF_rev4-Firmware.elf",
             "request": "launch",
-            "cwd": "${workspaceFolder}/firmware/build",
-            "executable": "xESC_YF_rev4-Firmware.elf",
+            "type": "cortex-debug",
             "servertype": "openocd",
-            "interface": "swd",
-            "device": "STM32C011F6",
-            "runToEntryPoint": "${workspaceFolder}/firmware/src/main",
+            "device": "STM32C011F6P6",
             "runToMain": true,
-            "preRestartCommands": [
-                "target remote localhost:3333",
-                "add-symbol-file ${workspaceFolderBasename}",
-                "enable breakpoint",
-                "monitor reset"
-            ],
-            "armToolchainPath": "/opt/st/stm32cubeclt_1.15.1/GNU-tools-for-STM32/bin",
             "configFiles": [
-                "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/openocd/scripts/interface/stlink.cfg",
-                "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/openocd/scripts/target/stm32c0x.cfg"
+                "modm/openocd.cfg",
             ],
-            "searchDir": [
-                "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/openocd/scripts"
+        },
+        {
+            "name": "Debug (Debug, Scons, STM32C011F6P6)",
+            "cwd": "${workspaceFolder}/firmware/src",
+            "executable": "../build/scons-debug/xESC_YF_rev4-Firmware.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32C011F6P6",
+            "runToMain": true,
+            "configFiles": [
+                "modm/openocd.cfg",
             ],
-            "svdFile": "${workspaceFolder}/firmware/etc/STM32C011.svd",
-            "preLaunchTask": "Build project"
-        }
+            "openOCDLaunchCommands": [
+                "init",
+                "reset init"
+            ],
+            "svdFile": "../etc/STM32C011.svd"
+        },
     ]
 }

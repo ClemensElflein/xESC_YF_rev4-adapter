@@ -1,135 +1,61 @@
 {
+    // See https://code.visualstudio.com/docs/editor/tasks
+    // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "windows": {
-        "options": {
-            "shell": {
-                "executable": "cmd.exe",
-                "args": ["/d", "/c"]
-            }
-        }
-    },
     "tasks": [
         {
-            "type": "cppbuild",
-            "label": "Build project",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "${command:cmake.buildDirectory}",
-                "-j",
-                "8"
-            ],
+            "type": "shell",
+            "label": "Build (Release)",
+            "command": "scons build profile=release",
+            "group": "build",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/firmware/src/"
             },
-            "problemMatcher": [
-                "$gcc"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            "presentation": {
+                "reveal": "always",
+                "showReuseMessage": false
+            },
+            "problemMatcher": "$gcc"
         },
         {
             "type": "shell",
-            "label": "Re-build project",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "${command:cmake.buildDirectory}",
-                "--clean-first",
-                "-v",
-                "-j",
-                "8"
-            ],
+            "label": "Build (Debug)",
+            "command": "scons build profile=debug",
+            "group": "build",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/firmware/src/"
             },
-            "problemMatcher": [
-                "$gcc"
-            ]
+            "presentation": {
+                "reveal": "always",
+                "showReuseMessage": false
+            },
+            "problemMatcher": "$gcc"
         },
         {
             "type": "shell",
-            "label": "Clean project",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "${command:cmake.buildDirectory}",
-                "--target",
-                "clean"
-            ],
+            "label": "Upload (Release)",
+            "command": "scons program profile=release",
+            "group": "build",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/firmware/src/"
             },
-            "problemMatcher": []
+            "presentation": {
+                "reveal": "always",
+                "showReuseMessage": false
+            },
         },
         {
             "type": "shell",
-            "label": "CubeProg: Flash project (SWD)",
-            "command": "STM32_Programmer_CLI",
-            "args": [
-                "--connect",
-                "port=swd",
-                "--download",
-                "${command:cmake.launchTargetPath}",
-                "-hardRst",
-                "-rst",
-                "--start"
-            ],
+            "label": "Upload (Debug)",
+            "command": "scons program profile=debug",
+            "group": "build",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/firmware/src/"
             },
-            "problemMatcher": []
+            "presentation": {
+                "reveal": "always",
+                "showReuseMessage": false
+            },
         },
-        {
-            "type": "shell",
-            "label": "CubeProg: Flash project with defined serial number (SWD) - you must set serial number first",
-            "command": "STM32_Programmer_CLI",
-            "args": [
-                "--connect",
-                "port=swd",
-                "sn=<yourserialnumber>",
-                "--download",
-                "${command:cmake.launchTargetPath}",
-                "-hardRst",
-                "-rst",
-                "--start"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": []
-        },
-        {
-            "type": "shell",
-            "label": "CubeProg: List all available communication interfaces",
-            "command": "STM32_Programmer_CLI",
-            "args": [
-                "--list"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": []
-        },
-        {
-            "type": "shell",
-            "label": "Flash program (st-flash)",
-            "command": "st-flash",
-            "args": [
-                "write",
-                "xESC_YF_rev4-Firmware.bin",
-                "0x8000000"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/firmware/build"
-            },
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        }
     ]
 }
