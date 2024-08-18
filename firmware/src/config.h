@@ -17,13 +17,10 @@
 // Time to keep motor controller in fault once a fault occurs
 #define MIN_FAULT_TIME_MILLIS 2000
 
-/* SA (Hall) Capture-Compare-Timer, RPM-Calc
- * RPM = 60 / ( (1/TimClock) * TimPrescaler * (CapCompTicks * 4 (Cycles/360°) / InputPrescaler) ) =>
- * RPM = (15 * TimClock * InputPrescaler) / (TimPrescaler * CapCompTicks)
- */
+// SA (Hall) Capture-Compare-Timer, RPM-Calc
 #define SA_TIMER_INPUT_PRESCALER 1
 #define SA_TIMER_PRESCALER 120
-#define SA_TIMER_MIN_TICKS 50   // Minimum possible tick size
+#define SA_TIMER_MIN_TICKS 50   // Minimum possible tick size used as timer input filter
 
 // ADC
 #define ADC_RESOLUTION Resolution::Bits12
@@ -32,13 +29,6 @@
 #define CUR_SENSE_2_GAIN 20.0f
 #define R_SHUNT 0.075f  // Shunt resistor
 
-// ----- old ----
-
 // Hardware limits before going into fault
-#define HW_LIMIT_PCB_TEMP 80.0
-
-// Max amps before shutting down
-#define HW_LIMIT_CURRENT 1.5
-
-// Max duty cycle to allow. This can't be 1, because the gate driver doesn't allow that for some reason.
-#define MAX_DUTY_CYCLE 0.95f
+#define HW_LIMIT_PCB_TEMP 80.0f
+#define HW_LIMIT_CURRENT 1.25d

@@ -124,6 +124,16 @@ void update_faults() {
         faults |= FAULT_WATCHDOG;
     }
 
+    // FAULT_OVERCURRENT
+    if (status.current_input > HW_LIMIT_CURRENT) {
+        faults |= FAULT_OVERCURRENT;
+    }
+
+    // FAULT_OVERTEMP_PCB
+    if (status.temperature_pcb > (double)min(HW_LIMIT_PCB_TEMP, settings.max_pcb_temp)) {
+        faults |= FAULT_OVERTEMP_PCB;
+    }
+
     // VMS FAULTs
     if (!vm_switch::Fault::read()) {
         if (vm_switch::In::isSet()) {  // VM-Switch is "on"

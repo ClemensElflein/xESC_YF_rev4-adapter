@@ -56,18 +56,16 @@ In addition to this adapter, it's nevertheless **required to exchange two cables
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-<!-- GETTING STARTED -->
-<!-- ## Getting Started
-
-> [!WARNING]  
-> This project is in **early development state** and only generics like start, stop & break do work now! -->
-
 ## Requirements
+
 
 <a href="assets/cross-gn-bk.jpg">
   <img align="right" width="30%" src="assets/cross-gn-bk.jpg" title="Mandatory cable x-change"/></a>
 
 **It's mandatory to cross the green and black mow-motor-cables!**
+
+> [!WARNING]  
+> **Never** plug or un-plug the mow-motor while the adapter is powered!
 
 > [!WARNING]  
 > Do **not** simply trust the cable colors!<br>
@@ -191,7 +189,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                          |
   | ------- | :----------: | --------------------------------------------- |
-  | 0.2.1   |  2024-08-??  | - Add shutdown signal handling (sleep/power-off VMC) |
+  | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current |
   | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature |
   | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection |
   | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break |
