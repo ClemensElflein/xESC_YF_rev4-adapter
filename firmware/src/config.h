@@ -1,11 +1,11 @@
 #pragma once
 
-#define PROTO_DEBUG  // Enable for debug logging on proto UART2
+// #define PROTO_DEBUG          // Enable for debug logging on proto UART2
 #define PROTO_DEBUG_BAUD 460800_Bd
-#define PROTO_DEBUG_MOTOR  // Enable motor specific debugging messages
+// #define PROTO_DEBUG_MOTOR    // Enable motor specific debugging messages
 // #define PROTO_DEBUG_HOST_RX  // Enable host RX debugging messages
 // #define PROTO_DEBUG_HOST_TX  // Enable host TX debugging messages
-#define PROTO_DEBUG_ADC  // Enable ADC specific debugging messages
+// #define PROTO_DEBUG_ADC      // Enable ADC specific debugging messages
 
 #undef MODM_LOG_LEVEL
 #define MODM_LOG_LEVEL modm::log::DEBUG  // ERROR, WARNING, INFO, DEUG
@@ -23,7 +23,7 @@
  */
 #define SA_TIMER_INPUT_PRESCALER 1
 #define SA_TIMER_PRESCALER 120
-#define SA_TIMER_MIN_TICKS 500  // Minimum possible tick size
+#define SA_TIMER_MIN_TICKS 50   // Minimum possible tick size
 
 // ADC
 #define ADC_RESOLUTION Resolution::Bits12

@@ -394,9 +394,10 @@ int main() {
     Timer1::setOverflow(0xFFFF);
     Timer1::configureInputChannel<motor::SA::Ch4>(Timer1::InputCaptureMapping::InputOwn,
                                                   Timer1::InputCapturePrescaler::Div1,  // has to match SA_TIMER_INPUT_PRESCALER
-                                                  Timer1::InputCapturePolarity::Rising, 2);
+                                                  Timer1::InputCapturePolarity::Rising,
+                                                  SA_TIMER_MIN_TICKS);  // Adapt filter when changing prescaler
     Timer1::enableInterrupt(Timer1::Interrupt::CaptureCompare4);
-    Timer1::enableInterruptVector(Timer1::Interrupt::CaptureCompare4, true, 500);  // Adapt filter when changing prescaler
+    Timer1::enableInterruptVector(Timer1::Interrupt::CaptureCompare4, true, 21);
     Timer1::applyAndReset();
     Timer1::start();
 
