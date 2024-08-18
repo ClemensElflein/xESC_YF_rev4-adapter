@@ -125,7 +125,7 @@ void update_faults() {
     }
 
     // FAULT_OVERCURRENT
-    if (status.current_input > HW_LIMIT_CURRENT) {
+    if (status.current_input > (double)HW_LIMIT_CURRENT) {
         faults |= FAULT_OVERCURRENT;
     }
 
@@ -140,7 +140,7 @@ void update_faults() {
             // Disable VM-Switch diagnostics when switched on,
             // because there's something miss-understood by me, or wrong with my PCB design
             // faults |= FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT;  // Not fully clear if VMS Thermal Error and/or Overload/short
-        } else {
+        } else if (!host::Shutdown::read()) {
             faults |= FAULT_OPEN_LOAD;
         }
     }
@@ -164,7 +164,12 @@ void update_faults() {
             ledseq_red.blink({.on = 500, .off = 500});
         }
     } else if (faults == 0) {
-        ledseq_green.on();
+        if (host::Shutdown::read()) {
+            ledseq_green.blink({.on = 100, .off = 1800, .limit_blink_cycles = 1, .fulfill = true});  // Default = 200ms ON, 200ms OFF
+        } else {
+            ledseq_green.on();
+        }
+
         if (status.fault_code != 0) {
             // Reset faults only if MIN_FAULT_TIME_MILLIS passed, or if it was a dedicated watchdog fault
             if (MILLIS - last_fault_millis > MIN_FAULT_TIME_MILLIS || status.fault_code == FAULT_WATCHDOG) {

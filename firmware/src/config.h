@@ -31,4 +31,4 @@
 
 // Hardware limits before going into fault
 #define HW_LIMIT_PCB_TEMP 80.0f
-#define HW_LIMIT_CURRENT 1.25d
+#define HW_LIMIT_CURRENT 1.25f
