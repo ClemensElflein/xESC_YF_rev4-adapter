@@ -108,7 +108,7 @@ void sendMessage(void *message, size_t size) {
 
     // write() byte as long as the TX buffer isn't full
     for (size_t i = 0; i < encoded_size;)
-        if (host_uart::Uart::write(buffer_tx[i])) i++;
+        if (host::Uart::write(buffer_tx[i])) i++;
 }
 
 void update_faults() {
@@ -120,7 +120,6 @@ void update_faults() {
     }
 
     // FAULT_WATCHDOG
-    // TODO: use/add STMs IWDG?
     if (MILLIS - last_watchdog_millis > WATCHDOG_TIMEOUT_MILLIS) {
         faults |= FAULT_WATCHDOG;
     }
@@ -132,7 +131,7 @@ void update_faults() {
             // because there's something miss-understood by me, or wrong with my PCB design
             // faults |= FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT;  // Not fully clear if VMS Thermal Error and/or Overload/short
         } else {
-            faults |= FAULT_INVALID_HALL;  // Alt-use as OPEN_LOAD
+            faults |= FAULT_OPEN_LOAD;
         }
     }
 
@@ -147,7 +146,7 @@ void update_faults() {
             ledseq_green.off();
         }
         // Red LED by priority
-        if (faults & FAULT_INVALID_HALL) {              // Open VMC
+        if (faults & FAULT_OPEN_LOAD) {
             ledseq_red.blink({.on = 125, .off = 125});  // Quick blink (4Hz)
         } else if (faults & (FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT)) {
             ledseq_red.blink({.on = 250, .off = 250});  // Fast blink (2Hz)
@@ -167,7 +166,7 @@ void update_faults() {
 }
 
 void set_motor_state() {
-    float new_duty = status.fault_code ? 0.0f : duty_setpoint;
+    float new_duty = (status.fault_code || host::Shutdown::read()) ? 0.0f : duty_setpoint;
     if (new_duty == duty) {
         return;
     }
@@ -191,8 +190,13 @@ void update_status() {
     status.seq++;
     update_faults();
 
-    if (!(status.fault_code & FAULT_INVALID_HALL)) {  // FAULT_INVALID_HALL = alt-use as OPEN_LOAD
+    // Enable/disable VMC
+    if (!(status.fault_code & FAULT_OPEN_LOAD) && !host::Shutdown::read()) {  // Motor connected && no Shutdown signal
         vm_switch::In::set();
+        Timer1::enableInterrupt(Timer1::Interrupt::CaptureCompare4);
+    } else if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) {  // Check if at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
+        Timer1::disableInterrupt(Timer1::Interrupt::CaptureCompare4);
+        vm_switch::In::reset();
     }
 
     set_motor_state();
@@ -201,7 +205,7 @@ void update_status() {
         // Check if motor stopped rotating
         if (sa_tacho == status.tacho) {  // Tacho equals last-tacho value
             // Motor (looks like) stopped (but same tacho values might happen due to an INT/tacho error or due to slow RPM)
-            if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) {  // Check it at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
+            if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) {  // Check if at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
                 sa_ticks = 0;
                 rpm = 0;
                 motor::Brk::reset();  // Release break
@@ -314,7 +318,7 @@ void PacketReceived() {
  */
 void handle_host_rx_buffer() {
     uint8_t data;
-    while (host_uart::Uart::read(data)) {
+    while (host::Uart::read(data)) {
         buffer_rx[idx_buffer_rx] = data;
         idx_buffer_rx++;
         if (idx_buffer_rx >= COBS_BUFFER_SIZE) {  // Buffer is full, but no separator. Reset

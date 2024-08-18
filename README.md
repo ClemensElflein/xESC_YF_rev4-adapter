@@ -176,7 +176,7 @@ Once done:
     - [x] Disable NRST pin functionality
     - [x] Motor current consumption
     - [x] PCB temperature (junction temp of STM)
-    - [ ] Support shutdown signal
+    - [x] Support shutdown signal
     - [ ] Stock motor (wrong) cabling detection
     - [ ] STM32 bootloader / flash via UART support
     - [ ] ~~Drive LEDs by PWM as one get blind when watching LED codes, but will cost approx. 2.5k of flash~~
@@ -191,8 +191,9 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                          |
   | ------- | :----------: | --------------------------------------------- |
-  | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature       |
-  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection       |
+  | 0.2.1   |  2024-08-??  | - Add shutdown signal handling (sleep/power-off VMC) |
+  | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature |
+  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection |
   | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break |
 
 

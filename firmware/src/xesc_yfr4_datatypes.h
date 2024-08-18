@@ -13,9 +13,10 @@
 #define FAULT_OVERVOLTAGE    (1u << 3)
 #define FAULT_OVERCURRENT    (1u << 4)
 #define FAULT_OVERTEMP_MOTOR (1u << 5)
-#define FAULT_OVERTEMP_PCB   (1u << 6) // Alt-use as VMS Thermal Error
-#define FAULT_INVALID_HALL   (1u << 7) // Alt-use as VMS OPEN_LOAD
+#define FAULT_OVERTEMP_PCB   (1u << 6)
+#define FAULT_INVALID_HALL   (1u << 7)
 #define FAULT_INTERNAL_ERROR (1u << 8)
+#define FAULT_OPEN_LOAD      (1u << 9)
 
 #pragma pack(push, 1)
 struct XescYFR4StatusPacket {

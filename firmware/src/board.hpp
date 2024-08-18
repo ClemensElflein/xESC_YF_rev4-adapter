@@ -67,14 +67,15 @@ using LedRed = GpioC14;
 using Leds = SoftwareGpioPort<LedGreen, LedRed>;
 /// @}
 
-namespace host_uart {
+namespace host {
 /// @ingroup modm_board_xescyfr4
 /// @{
 using Tx = GpioOutputA9;
 using Rx = GpioInputA10;
 using Uart = BufferedUart<UsartHal1, UartTxBuffer<32>, UartRxBuffer<32>>;
+using Shutdown = GpioInputA8;
 /// @}
-}  // namespace host_uart
+}  // namespace host
 
 namespace proto_uart {
 /// @ingroup modm_board_xescyfr4
@@ -135,11 +136,12 @@ initialize() {
     motor::RS::setOutput(Gpio::OutputType::PushPull);
     motor::RS::set();  // Motor !RS (Rapid/Rotor Start)
 
-    // Remap and init host_uart
+    // Remap and init host
     GpioA9::remap();   // Remap A9 -> A11
     GpioA10::remap();  // Remap A10 -> A12
-    host_uart::Uart::connect<host_uart::Tx::Tx, host_uart::Rx::Rx>();
-    host_uart::Uart::initialize<SystemClock, 115200_Bd>();
+    host::Uart::connect<host::Tx::Tx, host::Rx::Rx>();
+    host::Uart::initialize<SystemClock, 115200_Bd>();
+    host::Shutdown::setInput(Gpio::InputType::Floating);
 
 #ifdef PROTO_DEBUG
     proto_uart::Uart::connect<proto_uart::Tx::Tx, proto_uart::Rx::Rx>();
