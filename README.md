@@ -77,16 +77,28 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ## Prerequisites
 
-* You need an ST-Link debugger/programmer, like one of the cheap "ST-Link V2" probes from one of the big online retailer.
-* [STLINK Tools](https://github.com/stlink-org/stlink) >= v1.8.0 (earlier versions do **not** support the used STM32C0x MCU)
+* The compiled firmware, which can be found within the [Actions](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/actions) section. Click the one you're intersted in (newest or tagged), scroll down to 'Artifacts', download and unzip to somewhere.
 * As of writing, your openmower image has to be on edge version >= commit [0bfd489](https://github.com/ClemensElflein/open_mower_ros/commit/0bfd489401b3e659d183e6c1f9b557cb0d59d3c1) which happened on 2024-07-04
 
-## Installation
+## Firmware Installation
 
-1. The compiled firmware can be found in the [Actions](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/actions) section. Click the one you're intersted in (newest or tagged), scroll down to 'Artifacts', download and unzip.
-2. Connect your ST-Link probe to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
+We've two options to install the firmware. Either via:<br>
+- ST-Link debugger/programmer, for which you need to have access to the adapter PCB's SWDIO pins, or via
+- Open-Mower's UART via STM32 internal bootloader (which can be done with a closed mower)
 
-4. Flash the adapter:
+
+### Firmware Installation via ST-Link debugger/programmer
+
+#### Requirements
+
+* You need an ST-Link debugger/programmer, like one of the cheap "ST-Link V2" probes from one of the big online retailer.
+* [STLINK Tools](https://github.com/stlink-org/stlink) >= v1.8.0 (earlier versions do **not** support the used STM32C0x MCU)
+
+#### Flash
+
+1. Connect your ST-Link probe to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
+
+2. Flash the adapter:
    ```sh
    st-flash --reset write firmware_xesc_yf_rev4.bin 0x08000000
    ```
@@ -96,25 +108,106 @@ The latter has the advantage that you immediately see that you already crossed g
    > Do not unplug now!
    
    On first firmware boot, it need to flash some settings to the MCU. You'll see some blink codes.<br>
-   Do NOT unplug till you see 3 simultaneous blinks of the green+red LED (=success), following of a quick blink of the red LED (=no motor connected) as well as a normal green blink (=ROS not connected).<br>
+   Do NOT unplug till you see:
+   - 3 simultaneous blinks of the green+red LED (=success), following of a
+   - quick blink of the red LED (=no motor connected) as well as a
+   - normal green blink (=ROS not connected).
+   
    The whole procedure will only take about 10 seconds.
 
    If the board doesn't come up with blink signs, unplug and replug it. But once you see blink signs, do **not** unplug it before getting the described LED codes of the previous paragraph.   
 
-5. Adapt your mower_config. Here's the relevant section out of mower_config.sh.example:
-    ```
-   # Select your ESC type
-   # Supported values as of today:
-   # xesc_mini: for the STM32 version (VESC)
-   # xesc_mini_w_r4ma: for the STM32 version (VESC), but with Rev4 (Mow) Motor Adapter (only available for YardForceSA650 mower type)
-   # xesc_2040: for the RP2040 version (very experimental!)
-   # xesc_2040_w_r4ma: for the RP2040 version (very experimental!), but with Rev4 (Mow) Motor Adapter (only available for YardForceSA650 mower type)
-   export OM_MOWER_ESC_TYPE="xesc_mini"
-    ```
-6. Restart openmower via:
-   ```sh
-   sudo systemctl restart openmower
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Firmware Installation via serial connection (UART)
+
+#### Requirements
+
+* [STM32CubeProgrammer](https://www.st.com/en/development-tools/stm32cubeprog.html) is the tool we need to flash via UART. But because we like to use it with our OpenMower's Raspberry-Pi, we need it in `aarch64` architecture. **BUT** ST's programmer tool for ARM CPU's isn't available *for* ARM CPU's/architectures!!<br>
+So we need to trick, and for this you need a non-arm Linux machine.<br>
+  1. Download the `STM32CubePrg-Lin` package with (or to) a non-arm Linux machine
+  2. Unpack and install it on the non-arm Linux machine
+  3. Pack (zip, tar, ...) the installed binaries from where you just installed them
+  4. Copy that package to your Raspberry-Pi and unpack it to somewhere. I placed mine to /opt/STM32CubeProgrammer
+* [box64](https://github.com/ptitSeb/box64) to be able to run the STM32CubeProgrammer x86_64 binary with our aarch64 architecture.<br>
+Luckily they do have pre-build [Debian packages](https://github.com/ptitSeb/box64/blob/main/docs/COMPILE.md#debian-based-linux). Please follow that instruction.
+
+Once *box64* got installed you should be able to start the STM32Programmer CLI i.e. via: `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI`
+
+
+### Flash
+
+1. Login to your OpenMower Raspberry-Pi and stop openmower:<br>
+   `sudo systemctl stop openmower`
+   
+2. Configure Raspberry-PI's serial device where the adapter is connected to, which is normally */dev/ttyAMA3*:<br>
+   `stty -F /dev/ttyAMA3 115200 raw`
+   
+3. Now trigger the current running adapter firmware to do a reboot into the bootloader via:<br>
+    `echo -e "\x00Reboot into Bootloader" > /dev/ttyAMA3`
+
+4. Check if STM32 MCU is now in bootloader mode (Step 3. was successful):<br>
+   `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=/dev/ttyAMA3`<br>
+   Should output something like:<br>
+
    ```
+      -------------------------------------------------------------------
+                        STM32CubeProgrammer v2.16.0                  
+      -------------------------------------------------------------------
+
+   Serial Port /dev/ttyAMA3 is successfully opened.
+   Port configuration: parity = even, baudrate = 115200, data-bit = 8,
+                       stop-bit = 1.0, flow-control = off
+   Activating device: OK
+   Board       : --
+   Chip ID: 0x443 
+   BootLoader protocol version: 3.1
+   Device name : STM32C01x
+   Flash size  : 32 KBytes (default)
+   Device type : MCU
+   Revision ID : --  
+   Device CPU  : Cortex-M0+
+   ```
+
+5. Flash:<br>
+   `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=/dev/ttyAMA3 -w firmware_xesc_yf_rev4.bin 0x08000000`
+
+6. Reset the device (start our newly flashed program):<br>
+   `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=/dev/ttyAMA3 --go 0x08000000`
+
+   > [!WARNING]  
+   > Do not power-off now!
+   
+   On first firmware boot, it need to flash some settings to the MCU. You'll see some blink codes.<br>
+   Do NOT unplug till you see:
+   - 3 simultaneous blinks of the green+red LED (=success), following of a
+   - quick blink of the red LED (=no motor connected) as well as a
+   - normal green blink (=ROS not connected).
+   
+   The whole procedure will only take about 10 seconds.
+
+7. Finally start openmower again:<br>
+   `sudo systemctl start openmower`
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+## mower_config
+
+Lastly, you need to add the adapter to your mower_config. Here's the relevant section out of mower_config.sh.example:
+
+```
+# Select your ESC type
+# Supported values as of today:
+# xesc_mini: for the STM32 version (VESC)
+# xesc_mini_w_r4ma: for the STM32 version (VESC), but with Rev4 (Mow) Motor Adapter (only available for YardForceSA650 mower type)
+# xesc_2040: for the RP2040 version (very experimental!)
+# xesc_2040_w_r4ma: for the RP2040 version (very experimental!), but with Rev4 (Mow) Motor Adapter (only available for YardForceSA650 mower type)
+export OM_MOWER_ESC_TYPE="xesc_mini"
+```
+
+Once adapted, restart openmower via: `sudo systemctl restart openmower`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -134,6 +227,8 @@ The latter has the advantage that you immediately see that you already crossed g
   <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
 </table>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 ## Self-Compile
@@ -177,10 +272,10 @@ Once done:
     - [x] PCB temperature (junction temp of STM)
     - [x] Support shutdown signal
     - [ ] Stock motor (wrong) cabling detection
-    - [ ] STM32 bootloader / flash via UART support
-    - [ ] ~~Drive LEDs by PWM as one get blind when watching LED codes, but will cost approx. 2.5k of flash~~
-- [x] ROS driver
+    - [x] STM32 bootloader / flash via UART support
+- [ ] ROS driver
     - [x] xesc_ros::xesc_yfr4
+    - [ ] Add RPM
 
 See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/issues) for a full list of proposed features (and known issues).
 
@@ -190,6 +285,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                          |
   | ------- | :----------: | --------------------------------------------- |
+  | 0.2.2   |  2024-08-??  | - Support STM32 bootloader flash via UART |
   | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current |
   | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature |
   | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection |

@@ -1,6 +1,6 @@
 #pragma once
 
-// #define PROTO_DEBUG          // Enable for debug logging on proto UART2
+//#define PROTO_DEBUG          // Enable for debug logging on proto UART2
 #define PROTO_DEBUG_BAUD 460800_Bd
 // #define PROTO_DEBUG_MOTOR    // Enable motor specific debugging messages
 // #define PROTO_DEBUG_HOST_RX  // Enable host RX debugging messages
@@ -13,6 +13,8 @@
 #define STATUS_CYCLE 20ms
 #define NUM_STATUS_CYCLES_MOTOR_STOPPED 4  // Number of STATUS_CYCLES before motor get declared as stopped (if tacho doesn't changed)
 #define WATCHDOG_TIMEOUT_MILLIS 500
+#define BOOTLOADER_TRIGGER_STR "Reboot into Bootloader"
+#define BOOTLOADER_ADDR 0x1FFF0000UL
 
 // Time to keep motor controller in fault once a fault occurs
 #define MIN_FAULT_TIME_MILLIS 2000

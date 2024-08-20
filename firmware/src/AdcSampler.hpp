@@ -70,6 +70,12 @@ class AdcSampler : public modm::platform::Adc1 {
         startConversion();
     };
 
+    static void disable() {
+        disableInterrupt(Interrupt::EndOfConversion);
+        disableFreeRunningMode();
+        stopConversion();
+    }
+
     /**
      * @brief Get internal measured VRef
      *

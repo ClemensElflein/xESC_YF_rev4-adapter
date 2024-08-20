@@ -49,6 +49,8 @@
   https://community.st.com/s/question/0D50X0000ARQLq2/has-anyone-gotten-the-boot0-pin-to-work-on-an-stm32g071-solved
 
 */
+#pragma once
+
 #include <modm/platform.hpp>
 
 using namespace Board;

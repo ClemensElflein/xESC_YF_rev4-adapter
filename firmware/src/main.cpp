@@ -27,6 +27,7 @@
 #include "AdcSampler.hpp"
 #include "CRC.h"
 #include "disable_nrst.h"
+#include "jump_system_bootloader.h"
 #include "xesc_yfr4_datatypes.h"
 
 using namespace Board;
@@ -43,7 +44,7 @@ LedSeq<LedRed> ledseq_red;
 // Host comms (COBS)
 #define COBS_BUFFER_SIZE 100                 // Should be at least size of biggest RX/TX message + some COBS overhead bytes
 static uint8_t buffer_rx[COBS_BUFFER_SIZE];  // Serial RX buffer for COBS encoded data up to COBS end marker
-static unsigned int idx_buffer_rx = 0;
+static unsigned int buffer_rx_idx = 0;
 static uint8_t buffer_tx[COBS_BUFFER_SIZE];  // Serial TX buffer for COBS encoded messages
 COBS cobs;
 
@@ -282,7 +283,7 @@ MODM_ISR(TIM14) {
 void PacketReceived() {
     static uint8_t pkt_buffer[COBS_BUFFER_SIZE];  // COBS decoded packet buffer
 
-    size_t pkt_size = cobs.decode(buffer_rx, idx_buffer_rx - 1, (uint8_t *)pkt_buffer);
+    size_t pkt_size = cobs.decode(buffer_rx, buffer_rx_idx - 1, (uint8_t *)pkt_buffer);
 
     // calculate the CRC only if we have at least three bytes (two CRC, one data)
     if (pkt_size < 3) {
@@ -334,26 +335,30 @@ void PacketReceived() {
 void handle_host_rx_buffer() {
     uint8_t data;
     while (host::Uart::read(data)) {
-        buffer_rx[idx_buffer_rx] = data;
-        idx_buffer_rx++;
-        if (idx_buffer_rx >= COBS_BUFFER_SIZE) {  // Buffer is full, but no separator. Reset
+        buffer_rx[buffer_rx_idx++] = data;
+        if (buffer_rx_idx >= COBS_BUFFER_SIZE) {  // Buffer is full, but no COBS end marker. Reset
             LEDSEQ_ERROR_LL_COMM;
-            idx_buffer_rx = 0;
+            buffer_rx_idx = 0;
             return;
         }
 
         if (data == 0) {  // COBS end marker
 #ifdef PROTO_DEBUG_HOST_RX
-            MODM_LOG_DEBUG << "buffer_rx[" << idx_buffer_rx << "]:";
-            for (unsigned int i = 0; i < idx_buffer_rx; ++i) {
+            MODM_LOG_DEBUG << "buffer_rx[" << buffer_rx_idx << "]:";
+            for (unsigned int i = 0; i < buffer_rx_idx; ++i) {
                 MODM_LOG_DEBUG << " " << buffer_rx[i];
             }
             MODM_LOG_DEBUG << modm::endl
                            << modm::flush;
 #endif
             PacketReceived();
-            idx_buffer_rx = 0;
+            buffer_rx_idx = 0;
             return;
+        }
+
+        // Bootloader trigger string?
+        if (buffer_rx_idx == sizeof BOOTLOADER_TRIGGER_STR && strcmp((const char *)buffer_tx, BOOTLOADER_TRIGGER_STR)) {
+            jump_system_bootloader();
         }
     }
 }
