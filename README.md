@@ -284,7 +284,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                          |
   | ------- | :----------: | --------------------------------------------- |
-  | 0.2.2   |  2024-08-??  | - Support STM32 bootloader flash via UART |
+  | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART |
   | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current |
   | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature |
   | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection |
