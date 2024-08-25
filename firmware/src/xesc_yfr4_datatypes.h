@@ -24,12 +24,13 @@ struct XescYFR4StatusPacket {
     uint32_t seq;
     uint8_t fw_version_major;
     uint8_t fw_version_minor;
-    double temperature_pcb;  // temperature of printed circuit board (degrees Celsius)
-    double current_input;    // input current (ampere)
-    double duty_cycle;       // duty cycle (0 to 1)
-    uint32_t tacho;
-    uint32_t tacho_absolute;  // wheel ticks absolute
+    double temperature_pcb;   // temperature of printed circuit board (degrees Celsius)
+    double current_input;     // input current (ampere)
+    double duty_cycle;        // duty cycle (0 to 1)
     bool direction;           // direction CW/CCW
+    uint32_t tacho;           // wheel ticks
+    uint32_t tacho_absolute;  // wheel ticks absolute
+    uint16_t rpm;             // revolutions per minute (of the axis/shaft)
     int32_t fault_code;
     uint16_t crc;
 } __attribute__((packed));
