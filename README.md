@@ -107,13 +107,13 @@ We've two options to install the firmware. Either via:<br>
    > [!WARNING]  
    > Do not unplug now!
    
-   On first firmware boot, it need to flash some settings to the MCU. You'll see some blink codes.<br>
+   On absolutely first firmware boot, it need to flash some settings to the MCU. You'll see some blink codes.<br>
    Do NOT unplug till you see:
    - 3 simultaneous blinks of the green+red LED (=success), following of a
    - quick blink of the red LED (=no motor connected) as well as a
    - normal green blink (=ROS not connected).
    
-   The whole procedure will only take about 10 seconds.
+   The whole procedure will only take about 10 seconds. Once the procedure got processed it don't get triggered again for this MCU on future firmware flashes.
 
    If the board doesn't come up with blink signs, unplug and replug it. But once you see blink signs, do **not** unplug it before getting the described LED codes of the previous paragraph.   
 
@@ -123,16 +123,16 @@ We've two options to install the firmware. Either via:<br>
 
 #### Requirements
 
-* [STM32CubeProgrammer](https://www.st.com/en/development-tools/stm32cubeprog.html) is the tool we need to flash via UART. But because we like to use it with our OpenMower's Raspberry-Pi, we need it in `aarch64` architecture. **BUT** ST's programmer tool for ARM CPU's isn't available *for* ARM CPU's/architectures!!<br>
-So we need to trick, and for this you need a non-arm Linux machine.<br>
-  1. Download the `STM32CubePrg-Lin` package with (or to) a non-arm Linux machine
-  2. Unpack and install it on the non-arm Linux machine
+* [STM32CubeProgrammer](https://www.st.com/en/development-tools/stm32cubeprog.html) is the tool we need to flash via UART. But because we like to use it with our OpenMower's Raspberry-Pi, we need it in `aarch64` architecture. Unfortunately (as well as unbelievable) ST's programmer tool for ARM CPU's isn't available *for* ARM CPU's/architectures!!<br>
+So we need to trick a little bit, and for this you need a non-arm Linux machine (x86_64).<br>
+  1. Download [STM32CubePrg-Lin](https://www.st.com/en/development-tools/stm32cubeprog.html) package with (or to) a x86_64 Linux machine
+  2. Unpack and install it on the x86_64 Linux machine
   3. Pack (zip, tar, ...) the installed binaries from where you just installed them
   4. Copy that package to your Raspberry-Pi and unpack it to somewhere. I placed mine to /opt/STM32CubeProgrammer
-* [box64](https://github.com/ptitSeb/box64) to be able to run the STM32CubeProgrammer x86_64 binary with our aarch64 architecture.<br>
-Luckily they do have pre-build [Debian packages](https://github.com/ptitSeb/box64/blob/main/docs/COMPILE.md#debian-based-linux). Please follow that instruction.
+* [box64](https://github.com/ptitSeb/box64) to be able to run the STM32CubeProgrammer's x86_64 binary with our aarch64 architecture.<br>
+Luckily they do have pre-build [Debian packages](https://github.com/ptitSeb/box64/blob/main/docs/COMPILE.md#debian-based-linux). Please follow their instruction.
 
-Once *box64* got installed you should be able to start the STM32Programmer CLI i.e. via: `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI`
+Once *box64* got installed, you should be able to start the STM32Programmer CLI i.e. via: `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI`
 
 
 ### Flash
@@ -178,13 +178,13 @@ Once *box64* got installed you should be able to start the STM32Programmer CLI i
    > [!WARNING]  
    > Do not power-off now!
    
-   On first firmware boot, it need to flash some settings to the MCU. You'll see some blink codes.<br>
+   On absolutely first firmware boot, it need to flash some settings to the MCU. You'll see some blink codes.<br>
    Do NOT unplug till you see:
    - 3 simultaneous blinks of the green+red LED (=success), following of a
    - quick blink of the red LED (=no motor connected) as well as a
    - normal green blink (=ROS not connected).
    
-   The whole procedure will only take about 10 seconds.
+   The whole procedure will only take about 10 seconds. Once the procedure got processed it don't get triggered again for this MCU on future firmware flashes.
 
 7. Finally start openmower again:<br>
    `sudo systemctl start openmower`
@@ -221,7 +221,6 @@ Once adapted, restart openmower via: `sudo systemctl restart openmower`
   <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
   <tr><td>0.5Hz flash<br>(short flash every 2 seconds)</td><td></td><td>Shutdown (Sleep) triggered by OpenMower Pico FW</td></tr>
   <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>
-  <!-- <tr><td>flash</td><td></td><td>SA tacho flash for 90° rotation</td></tr> -->
   <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected).<br> <b>WARNING:</b> Do not connect the motor while the adapter is powered!</td></tr>
   <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
   <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
