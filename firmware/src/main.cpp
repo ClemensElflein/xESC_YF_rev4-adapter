@@ -220,7 +220,7 @@ void update_status() {
     if (duty == 0.0f) {
         // Check if motor stopped rotating
         if (sa_tacho == status.tacho) {  // Tacho equals last-tacho value
-            // Motor (looks like) stopped (but same tacho values might happen due to an INT/tacho error or due to slow RPM)
+            // Motor (looks like) stopped (but same tacho values might also happen due to an INT/tacho error or due to slow RPM)
             if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) {  // Check if at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
                 sa_ticks = 0;
                 rpm = 0;
