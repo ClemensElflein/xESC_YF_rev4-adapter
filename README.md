@@ -265,16 +265,15 @@ Once done:
     - [x] Generic motor control (start, stop, break)
     - [x] Read SA, math RPM
     - [x] Open VMC (no motor connected) detection
-    - [ ] ~~VMC-short and thermal error handling of VM-Switch~~
     - [x] Disable NRST pin functionality
     - [x] Motor current consumption
     - [x] PCB temperature (junction temp of STM)
     - [x] Support shutdown signal
     - [ ] Stock motor (wrong) cabling detection
     - [x] STM32 bootloader / flash via UART support
-- [ ] ROS driver
+- [x] ROS driver
     - [x] xesc_ros::xesc_yfr4
-    - [ ] Add RPM
+    - [x] Add RPM
 
 See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/issues) for a full list of proposed features (and known issues).
 
@@ -284,6 +283,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                          |
   | ------- | :----------: | --------------------------------------------- |
+  | 0.2.3   |  2024-10-03  | - Add RPM to status package |
   | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART |
   | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current |
   | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature |

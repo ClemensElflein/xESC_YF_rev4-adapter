@@ -201,7 +201,7 @@ void set_motor_state() {
  */
 void update_status() {
     static uint8_t motor_stopped_cycles = 0;  // No tacho change cycle counter
-    uint16_t rpm;
+    static uint16_t rpm;
 
     status.seq++;
     update_faults();
@@ -220,7 +220,7 @@ void update_status() {
     if (duty == 0.0f) {
         // Check if motor stopped rotating
         if (sa_tacho == status.tacho) {  // Tacho equals last-tacho value
-            // Motor (looks like) stopped (but same tacho values might happen due to an INT/tacho error or due to slow RPM)
+            // Motor (looks like) stopped (but same tacho values might also happen due to an INT/tacho error or due to slow RPM)
             if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) {  // Check if at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
                 sa_ticks = 0;
                 rpm = 0;
@@ -264,6 +264,7 @@ void update_status() {
     status.duty_cycle = duty;
     status.tacho = sa_tacho;
     status.tacho_absolute = sa_tacho;
+    status.rpm = rpm;
     status.temperature_pcb = AdcSampler::getInternalTemp();
     status.current_input = AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT);
 
