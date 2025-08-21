@@ -1,4 +1,0 @@
-(sym_lib_table
-  (version 7)
-  (lib (name "xESC_YF_r4")(type "KiCad")(uri "${KIPRJMOD}/xESC_YF_r4.kicad_sym")(options "")(descr ""))
-)
