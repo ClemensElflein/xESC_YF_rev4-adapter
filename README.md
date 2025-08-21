@@ -25,7 +25,7 @@
   </p>
 
   <a href="https://github.com/ClemensElflein/xESC_YF_rev4-adapter">
-    <img src="PCB/xESC_YF_r4.png" alt="Logo">
+    <img src="assets/xESC_YF_r4_v1.0.png" alt="Logo">
   </a>
 
 
@@ -192,8 +192,9 @@ Once *box64* got installed, you should be able to start the STM32Programmer CLI 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+## OpenMower Config
 
-## mower_config
+### OpenMower V1 based Hardware (mower_config)
 
 Lastly, you need to add the adapter to your mower_config. Here's the relevant section out of mower_config.sh.example:
 
@@ -208,6 +209,10 @@ export OM_MOWER_ESC_TYPE="xesc_mini"
 ```
 
 Once adapted, restart openmower via: `sudo systemctl restart openmower`
+
+### OpenMower V2 based Hardware: (xCore Firmware)
+
+TODO: Install xCore firmware: openmower-yardforce-v4.bin
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
