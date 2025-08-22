@@ -35,5 +35,5 @@ PCB/production/backups/
 firmware/build/
 firmware/src/modm/
 firmware/src/SConstruct
-firmware/src/project.xml.log
+firmware/src/project.*xml.log
 firmware/src/.sconsign.dblite
