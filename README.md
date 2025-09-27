@@ -24,10 +24,9 @@
     <br />
   </p>
 
-  <a href="https://github.com/ClemensElflein/xESC_YF_rev4-adapter">
-    <img src="assets/xESC_YF_r4_v1.0.png" alt="Logo">
-  </a>
-
+  |             v1.x Hardware              |             v2.x Hardware              |
+  | :------------------------------------: | :------------------------------------: |
+  | ![HW v1.x](assets/xESC_YF_r4_v1.0.png) | ![HW v1.x](assets/xESC_YF_r4_v2.0.png) |
 
 </div>
 
@@ -104,6 +103,8 @@ We've two options to install the firmware. Either via:<br>
    ```
    When done, st-flash should report 'Flash written and verified! jolly good!' (or similar) and immediately reboot.<br>
 
+   **Only relevant for v1.x hardware:**
+
    > [!WARNING]  
    > Do not unplug now!
    
@@ -175,6 +176,8 @@ Once *box64* got installed, you should be able to start the STM32Programmer CLI 
 6. Reset the device (start our newly flashed program):<br>
    `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=/dev/ttyAMA3 --go 0x08000000`
 
+   **Only relevant for v1.x hardware:**
+
    > [!WARNING]  
    > Do not power-off now!
    
@@ -212,7 +215,7 @@ Once adapted, restart openmower via: `sudo systemctl restart openmower`
 
 ### OpenMower V2 based Hardware: (xCore Firmware)
 
-TODO: Install xCore firmware: openmower-yardforce-v4.bin
+Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yardforce-v4"`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -246,7 +249,7 @@ Once done:
 2. Change into the project source directory:<br>
   `cd xESC_YF_rev4-adapter/firmware/src`
 3. Build the modm library files:<br>
-  `lbuild build`
+  `lbuild -c project.hw_v<1|2>.xml build`
 4. Compile the firmware binary:<br>
   `scons bin`
 5. Flash firmware:<br>
@@ -279,6 +282,7 @@ Once done:
 - [x] ROS driver
     - [x] xesc_ros::xesc_yfr4
     - [x] Add RPM
+- [x] OpenMower Hardware V2 firmware driver
 
 See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/issues) for a full list of proposed features (and known issues).
 
@@ -286,14 +290,15 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
 ## History
 
-  | Version | Release Date | Info                                          |
-  | ------- | :----------: | --------------------------------------------- |
-  | 0.2.3   |  2024-10-03  | - Add RPM to status package |
-  | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART |
-  | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current |
+  | Version | Release Date | Info                                                                                                                        |
+  | ------- | :----------: | --------------------------------------------------------------------------------------------------------------------------- |
+  | 0.3.0   |  2025-08-22  | - Add support for Rev4-ESC hardware v2.x                                                                                    |
+  | 0.2.3   |  2024-10-03  | - Add RPM to status package                                                                                                 |
+  | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART                                                                                   |
+  | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current                                 |
   | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature |
-  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection |
-  | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break |
+  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection                                        |
+  | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break                                                                               |
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -332,19 +337,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 Project Link: [https://github.com/ClemensElflein/xESC_YF_rev4-adapter](https://github.com/ClemensElflein/xESC_YF_rev4-adapter)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ACKNOWLEDGMENTS -->
-<!--
-## Acknowledgments
-
-* []()
-* []()
-* []()
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-->
 
 
 <!-- MARKDOWN LINKS & IMAGES -->

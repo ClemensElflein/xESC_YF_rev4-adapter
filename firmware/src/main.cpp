@@ -21,7 +21,7 @@
 #include "LedSeq.hpp"
 #include "board.hpp"
 #include "config.h"
-#ifdef CRC  // FIXME remove modm/STM32 CRC or use it
+#ifdef CRC // FIXME remove modm/STM32 CRC or use it
 #undef CRC
 #endif
 #include "AdcSampler.hpp"
@@ -42,14 +42,14 @@ LedSeq<LedRed> ledseq_red;
 #define LEDSEQ_ERROR_LL_COMM ledseq_red.blink({.on = 20, .off = 30, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = true})
 
 // Host comms (COBS)
-#define COBS_BUFFER_SIZE 100                 // Should be at least size of biggest RX/TX message + some COBS overhead bytes
-static uint8_t buffer_rx[COBS_BUFFER_SIZE];  // Serial RX buffer for COBS encoded data up to COBS end marker
+#define COBS_BUFFER_SIZE 100                // Should be at least size of biggest RX/TX message + some COBS overhead bytes
+static uint8_t buffer_rx[COBS_BUFFER_SIZE]; // Serial RX buffer for COBS encoded data up to COBS end marker
 static unsigned int buffer_rx_idx = 0;
-static uint8_t buffer_tx[COBS_BUFFER_SIZE];  // Serial TX buffer for COBS encoded messages
+static uint8_t buffer_tx[COBS_BUFFER_SIZE]; // Serial TX buffer for COBS encoded messages
 COBS cobs;
 
 // Misc
-std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {};  // Definition of AdcSampler's private _data buffer (initialized with 0)
+std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {}; // Definition of AdcSampler's private _data buffer (initialized with 0)
 
 volatile uint32_t last_watchdog_millis = 0;
 volatile uint32_t last_fault_millis = 0;
@@ -64,20 +64,20 @@ float duty_setpoint = 0.0;
 // volatile float last_duty = 1000.0f;
 
 // SA (Hall) Input - CaptureCompare Timer Configuration
-volatile uint32_t sa_ticks = 0;  // SA Timer Ticks between 2 SA Signals. Has to be larger than tick register due to overflow
-volatile uint32_t sa_tacho = 0;  // SA Tacho ticks (1 ticks/360)
+volatile uint32_t sa_ticks = 0; // SA Timer Ticks between 2 SA Signals. Has to be larger than tick register due to overflow
+volatile uint32_t sa_tacho = 0; // SA Tacho ticks (1 ticks/360)
 
 XescYFR4StatusPacket status = {};
 XescYFR4SettingsPacket settings = {};
 bool settings_valid = false;
 
-void sendMessage(void *message, size_t size) {
+void sendMessage(void* message, size_t size) {
     // Packages have to be at least 1 byte of type + 1 byte of data + 2 bytes of CRC
     if (size < 4) {
         LEDSEQ_ERROR_LL_COMM;
         return;
     }
-    uint8_t *data_pointer = (uint8_t *)message;
+    uint8_t* data_pointer = (uint8_t*)message;
 
     // Calc CRC
     uint16_t crc = CRC::Calculate(data_pointer, size - 2, CRC::CRC_16_CCITTFALSE());
@@ -86,7 +86,7 @@ void sendMessage(void *message, size_t size) {
 
 #ifdef PROTO_DEBUG_HOST_TX
     MODM_LOG_DEBUG << "before encoding " << size << "byte:" << modm::endl;
-    uint8_t *temp = data_pointer;
+    uint8_t* temp = data_pointer;
     for (size_t i = 0; i < size; i++) {
         MODM_LOG_DEBUG << *temp << " ";
         temp++;
@@ -95,7 +95,7 @@ void sendMessage(void *message, size_t size) {
 #endif
 
     // Encode message
-    size_t encoded_size = cobs.encode((uint8_t *)message, size, buffer_tx);
+    size_t encoded_size = cobs.encode((uint8_t*)message, size, buffer_tx);
     buffer_tx[encoded_size] = 0;
     encoded_size++;
 
@@ -109,7 +109,8 @@ void sendMessage(void *message, size_t size) {
 
     // write() byte as long as the TX buffer isn't full
     for (size_t i = 0; i < encoded_size;)
-        if (host::Uart::write(buffer_tx[i])) i++;
+        if (host::Uart::write(buffer_tx[i]))
+            i++;
 }
 
 void update_faults() {
@@ -135,9 +136,10 @@ void update_faults() {
         faults |= FAULT_OVERTEMP_PCB;
     }
 
+#ifdef HW_V1
     // VMS FAULTs
     if (!vm_switch::Fault::read()) {
-        if (vm_switch::In::isSet()) {  // VM-Switch is "on"
+        if (vm_switch::In::isSet()) { // VM-Switch is "on"
             // Disable VM-Switch diagnostics when switched on,
             // because there's something miss-understood by me, or wrong with my PCB design
             // faults |= FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT;  // Not fully clear if VMS Thermal Error and/or Overload/short
@@ -145,28 +147,29 @@ void update_faults() {
             faults |= FAULT_OPEN_LOAD;
         }
     }
+#endif
 
     if (faults) {
         status.fault_code = faults;
         last_fault_millis = MILLIS;
 
         // Green LED
-        if (faults & FAULT_UNINITIALIZED) {  // Open VMC
-            ledseq_green.blink({.on = 500, .off = 500});
+        if (faults & FAULT_UNINITIALIZED) { // Open VMC
+            ledseq_green.blink({ .on = 500, .off = 500 });
         } else {
             ledseq_green.off();
         }
         // Red LED by priority
         if (faults & FAULT_OPEN_LOAD) {
-            ledseq_red.blink({.on = 125, .off = 125});  // Quick blink (4Hz)
+            ledseq_red.blink({ .on = 125, .off = 125 }); // Quick blink (4Hz)
         } else if (faults & (FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT)) {
-            ledseq_red.blink({.on = 250, .off = 250});  // Fast blink (2Hz)
+            ledseq_red.blink({ .on = 250, .off = 250 }); // Fast blink (2Hz)
         } else if (faults & FAULT_WATCHDOG) {
-            ledseq_red.blink({.on = 500, .off = 500});
+            ledseq_red.blink({ .on = 500, .off = 500 });
         }
     } else if (faults == 0) {
         if (host::Shutdown::read()) {
-            ledseq_green.blink({.on = 100, .off = 1800, .limit_blink_cycles = 1, .fulfill = true});  // Default = 200ms ON, 200ms OFF
+            ledseq_green.blink({ .on = 100, .off = 1800, .limit_blink_cycles = 1, .fulfill = true }); // Default = 200ms ON, 200ms OFF
         } else {
             ledseq_green.on();
         }
@@ -186,12 +189,14 @@ void set_motor_state() {
     if (new_duty == duty) {
         return;
     }
-    if (new_duty == 0.0f) {   // Stop motor
-        motor::RS::set();     // !RS off
-        motor::Brk::set();    // Break
-    } else {                  // Start motor
-        motor::Brk::reset();  // Release break
-        motor::RS::reset();   // !RS on
+    if (new_duty == 0.0f) {
+        // Stop motor
+        motor::RS::set();  // !RS off
+        motor::Brk::set(); // Break
+    } else {
+        // Start motor
+        motor::Brk::reset(); // Release break
+        motor::RS::reset();  // !RS on
     }
     duty = new_duty;
 }
@@ -200,17 +205,17 @@ void set_motor_state() {
  * @brief update_status() get called every STATUS_CYCLE (by hardware timer)
  */
 void update_status() {
-    static uint8_t motor_stopped_cycles = 0;  // No tacho change cycle counter
+    static uint8_t motor_stopped_cycles = 0; // No tacho change cycle counter
     static uint16_t rpm;
 
     status.seq++;
     update_faults();
 
     // Enable/disable VMC
-    if (!(status.fault_code & FAULT_OPEN_LOAD) && !host::Shutdown::read()) {  // Motor connected && no Shutdown signal
+    if (!(status.fault_code & FAULT_OPEN_LOAD) && !host::Shutdown::read()) { // Motor connected && no Shutdown signal
         vm_switch::In::set();
         Timer1::enableInterrupt(Timer1::Interrupt::CaptureCompare4);
-    } else if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) {  // Check if at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
+    } else if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) { // Check if at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
         Timer1::disableInterrupt(Timer1::Interrupt::CaptureCompare4);
         vm_switch::In::reset();
     }
@@ -219,12 +224,12 @@ void update_status() {
 
     if (duty == 0.0f) {
         // Check if motor stopped rotating
-        if (sa_tacho == status.tacho) {  // Tacho equals last-tacho value
+        if (sa_tacho == status.tacho) { // Tacho equals last-tacho value
             // Motor (looks like) stopped (but same tacho values might also happen due to an INT/tacho error or due to slow RPM)
-            if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) {  // Check if at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
+            if (motor_stopped_cycles > NUM_STATUS_CYCLES_MOTOR_STOPPED) { // Check if at least NUM_STATUS_CYCLES_MOTOR_STOPPED times
                 sa_ticks = 0;
                 rpm = 0;
-                motor::Brk::reset();  // Release break
+                motor::Brk::reset(); // Release break
             } else {
                 motor_stopped_cycles++;
             }
@@ -245,16 +250,16 @@ void update_status() {
     MODM_LOG_INFO << "now=" << MILLIS << "ms status.fault_code=" << status.fault_code;
 #ifdef PROTO_DEBUG_MOTOR
     MODM_LOG_DEBUG << " sa_tacho=" << (uint32_t)sa_tacho
-                   << " sa_ticks=" << (uint32_t)sa_ticks
-                   << " rpm=" << rpm;
+        << " sa_ticks=" << (uint32_t)sa_ticks
+        << " rpm=" << rpm;
 #endif
 #ifdef PROTO_DEBUG_ADC
     MODM_LOG_DEBUG << " VRef=" << AdcSampler::getInternalVref_u() << "mV, " << AdcSampler::getInternalVref_f() << "mV"
-                   << " Temp=" << AdcSampler::getInternalTemp()
-                   << " CurrentSense=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) << "V"
-                   << ", " << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT) << "A"
-                   << " CurrentSense_2=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense2) << "V"
-                   << ", " << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense2) / (CUR_SENSE_2_GAIN * R_SHUNT) << "A";
+        << " Temp=" << AdcSampler::getInternalTemp()
+        << " CurrentSense=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) << "V"
+        << ", " << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT) << "A"
+        << " CurrentSense_2=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense2) << "V"
+        << ", " << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense2) / (CUR_SENSE_2_GAIN * R_SHUNT) << "A";
 #endif
     MODM_LOG_INFO
         << modm::endl
@@ -282,9 +287,9 @@ MODM_ISR(TIM14) {
  *
  */
 void PacketReceived() {
-    static uint8_t pkt_buffer[COBS_BUFFER_SIZE];  // COBS decoded packet buffer
+    static uint8_t pkt_buffer[COBS_BUFFER_SIZE]; // COBS decoded packet buffer
 
-    size_t pkt_size = cobs.decode(buffer_rx, buffer_rx_idx - 1, (uint8_t *)pkt_buffer);
+    size_t pkt_size = cobs.decode(buffer_rx, buffer_rx_idx - 1, (uint8_t*)pkt_buffer);
 
     // calculate the CRC only if we have at least three bytes (two CRC, one data)
     if (pkt_size < 3) {
@@ -301,32 +306,36 @@ void PacketReceived() {
     }
 
     switch (pkt_buffer[0]) {
-        case XESCYFR4_MSG_TYPE_CONTROL: {
-            if (pkt_size != sizeof(struct XescYFR4ControlPacket)) {
-                LEDSEQ_ERROR_LL_COMM;
-                return;
-            }
-            // Got control packet
-            last_watchdog_millis = MILLIS;
-            XescYFR4ControlPacket *packet = (XescYFR4ControlPacket *)pkt_buffer;
-            duty_setpoint = packet->duty_cycle;
-            set_motor_state();
-        } break;
-        case XESCYFR4_MSG_TYPE_SETTINGS: {
-            if (pkt_size != sizeof(struct XescYFR4SettingsPacket)) {
-                settings_valid = false;
-                LEDSEQ_ERROR_LL_COMM;
-                return;
-            }
-            XescYFR4SettingsPacket *packet = (XescYFR4SettingsPacket *)pkt_buffer;
-            settings = *packet;
-            settings_valid = true;
-        } break;
-
-        default:
-            // Wrong/unknown packet type
+    case XESCYFR4_MSG_TYPE_CONTROL:
+    {
+        if (pkt_size != sizeof(struct XescYFR4ControlPacket)) {
             LEDSEQ_ERROR_LL_COMM;
-            break;
+            return;
+        }
+        // Got control packet
+        last_watchdog_millis = MILLIS;
+        XescYFR4ControlPacket* packet = (XescYFR4ControlPacket*)pkt_buffer;
+        duty_setpoint = packet->duty_cycle;
+        set_motor_state();
+    }
+    break;
+    case XESCYFR4_MSG_TYPE_SETTINGS:
+    {
+        if (pkt_size != sizeof(struct XescYFR4SettingsPacket)) {
+            settings_valid = false;
+            LEDSEQ_ERROR_LL_COMM;
+            return;
+        }
+        XescYFR4SettingsPacket* packet = (XescYFR4SettingsPacket*)pkt_buffer;
+        settings = *packet;
+        settings_valid = true;
+    }
+    break;
+
+    default:
+        // Wrong/unknown packet type
+        LEDSEQ_ERROR_LL_COMM;
+        break;
     }
 }
 
@@ -337,20 +346,20 @@ void handle_host_rx_buffer() {
     uint8_t data;
     while (host::Uart::read(data)) {
         buffer_rx[buffer_rx_idx++] = data;
-        if (buffer_rx_idx >= COBS_BUFFER_SIZE) {  // Buffer is full, but no COBS end marker. Reset
+        if (buffer_rx_idx >= COBS_BUFFER_SIZE) { // Buffer is full, but no COBS end marker. Reset
             LEDSEQ_ERROR_LL_COMM;
             buffer_rx_idx = 0;
             return;
         }
 
-        if (data == 0) {  // COBS end marker
+        if (data == 0) { // COBS end marker
 #ifdef PROTO_DEBUG_HOST_RX
             MODM_LOG_DEBUG << "buffer_rx[" << buffer_rx_idx << "]:";
             for (unsigned int i = 0; i < buffer_rx_idx; ++i) {
                 MODM_LOG_DEBUG << " " << buffer_rx[i];
             }
             MODM_LOG_DEBUG << modm::endl
-                           << modm::flush;
+                << modm::flush;
 #endif
             PacketReceived();
             buffer_rx_idx = 0;
@@ -358,7 +367,7 @@ void handle_host_rx_buffer() {
         }
 
         // Bootloader trigger string?
-        if (buffer_rx_idx == sizeof BOOTLOADER_TRIGGER_STR && strcmp((const char *)buffer_tx, BOOTLOADER_TRIGGER_STR)) {
+        if (buffer_rx_idx == sizeof BOOTLOADER_TRIGGER_STR && strcmp((const char*)buffer_tx, BOOTLOADER_TRIGGER_STR)) {
             jump_system_bootloader();
         }
     }
@@ -369,10 +378,10 @@ void handle_host_rx_buffer() {
  */
 MODM_ISR(TIM1_CC) {
     static uint16_t last_cc_value = 0;
-    uint16_t temp_cc_value = Timer1::getCompareValue<motor::SA::Ch4>();
+    uint16_t temp_cc_value = Timer1::getCompareValue<motor::SATimChan>();
     uint32_t temp_ticks;
 
-    Timer1::acknowledgeInterruptFlags(Timer1::InterruptFlag::CaptureCompare4);
+    Timer1::acknowledgeInterruptFlags(motor::SACaptureFlag);
     sa_tacho++;
 
     if (Timer1::getInterruptFlags() & Timer1::InterruptFlag::Update) {
@@ -395,30 +404,32 @@ MODM_ISR(TIM1_CC) {
 int main() {
     Board::initialize();
 
-    disable_nrst();  // Check NRST pin. Will flash if wrong and reset
-    // Now thats ensured that NRST is disabled...
-    vm_switch::DiagEnable::set();  // VM-Switch diagnostics enable
+#ifdef HW_V1
+    disable_nrst(); // Check NRST pin. Will flash if wrong and reset
+#endif
 
-    AdcSampler::init();  // Init & run AdcSampler
+    vm_switch::DiagEnable::set(); // VM-Switch diagnostics enable
+
+    AdcSampler::init(); // Init & run AdcSampler
 
     // Prepare status msg
     status.message_type = XESCYFR4_MSG_TYPE_STATUS;
     status.fw_version_major = 0;
     status.fw_version_minor = 2;
-    status.direction = 0;  // Our motor has only one direction
+    status.direction = 0; // Our motor has only one direction
 
     // SA (Hall) input - Capture/Compare timer
-    Timer1::connect<motor::SA::Ch4>();
+    Timer1::connect<motor::SATimChan>();
     Timer1::enable();
     Timer1::setMode(Timer1::Mode::UpCounter);
     Timer1::setPrescaler(SA_TIMER_PRESCALER);
     Timer1::setOverflow(0xFFFF);
-    Timer1::configureInputChannel<motor::SA::Ch4>(Timer1::InputCaptureMapping::InputOwn,
-                                                  Timer1::InputCapturePrescaler::Div1,  // has to match SA_TIMER_INPUT_PRESCALER
-                                                  Timer1::InputCapturePolarity::Rising,
-                                                  SA_TIMER_MIN_TICKS);  // Adapt filter when changing prescaler
-    Timer1::enableInterrupt(Timer1::Interrupt::CaptureCompare4);
-    Timer1::enableInterruptVector(Timer1::Interrupt::CaptureCompare4, true, 21);
+    Timer1::configureInputChannel<motor::SATimChan>(Timer1::InputCaptureMapping::InputOwn,
+        Timer1::InputCapturePrescaler::Div1, // has to match SA_TIMER_INPUT_PRESCALER
+        Timer1::InputCapturePolarity::Rising,
+        SA_TIMER_MIN_TICKS); // Adapt filter when changing prescaler
+    Timer1::enableInterrupt(motor::SACaptureInterrupt);
+    Timer1::enableInterruptVector(motor::SACaptureInterrupt, true, 21);
     Timer1::applyAndReset();
     Timer1::start();
 
@@ -432,8 +443,8 @@ int main() {
     Timer14::start();
 
     // LED blink code "Boot up successful"
-    ledseq_green.blink({.limit_blink_cycles = 3, .fulfill = true});  // Default = 200ms ON, 200ms OFF
-    ledseq_red.blink({.limit_blink_cycles = 3, .fulfill = true});    // Default = 200ms ON, 200ms OFF
+    ledseq_green.blink({ .limit_blink_cycles = 3, .fulfill = true }); // Default = 200ms ON, 200ms OFF
+    ledseq_red.blink({ .limit_blink_cycles = 3, .fulfill = true });   // Default = 200ms ON, 200ms OFF
 
     while (true) {
         handle_host_rx_buffer();

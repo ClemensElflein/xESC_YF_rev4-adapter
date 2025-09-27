@@ -29,19 +29,17 @@
 using namespace modm::literals;
 
 class AdcSampler : public modm::platform::Adc1 {
-   public:
+public:
     enum Sensors : uint8_t {
         VRef = 0,
         CurSense,   // = In2
-        CurSense2,  // = In1
         Temp,
     };
 
     // Has to match Sensors order. FIXME: Somehow static
-    static constexpr std::array<Channel, 4> sequence{
+    static constexpr std::array<Channel, 3> sequence{
         Channel::InternalReference,
-        Channel::In2,
-        Channel::In1,
+        Board::CurSenseChan,
         Channel::Temperature,
     };
 
@@ -52,12 +50,17 @@ class AdcSampler : public modm::platform::Adc1 {
     static void init() {
 #ifdef PROTO_DEBUG_ADC
         MODM_LOG_INFO << "AdcSampler::init" << modm::endl
-                      << modm::flush;
+            << modm::flush;
 #endif
         // Target frequency consideration:
         // Let's get: 4 Channels * 160.5 sampling rate * 32 Oversamples every about 20ms (50Hz) = 1.03 MHz
         initialize<Board::SystemClock, ClockMode::Asynchronous, 750_kHz>();  // Frequency is slower but more accurate
-        connect<Board::AdcCurSense::In2, Board::AdcCurSense2::In1>();
+        //connect<Board::AdcCurSense::In2>();
+#ifdef HW_V1
+    connect<Board::CurSense::In2>();
+#else
+    connect<Board::CurSense::In3>();
+#endif
         setSampleTime(SampleTime::Cycles160_5);
         setResolution(ADC_RESOLUTION);
         setRightAdjustResult();
@@ -115,7 +118,7 @@ class AdcSampler : public modm::platform::Adc1 {
         return (getInternalVref_f() * _data.at(sensor)) / ADC_NUM_CODES;
     }
 
-   private:
+private:
     static std::array<uint16_t, sequence.size()> _data;  // ADC data buffer indexed in the order of sequence
 
     static void sequence_handler() {
