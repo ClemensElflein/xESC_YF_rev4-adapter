@@ -81,6 +81,45 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ## Firmware Installation
 
+### Requirements
+
+* You need an ST-Link debugger/programmer, like one of the cheap "ST-Link V2" probes from one of the big online retailer.
+* [STLINK Tools](https://github.com/stlink-org/stlink) >= v1.8.0 (earlier versions do **not** support the used STM32C0x MCU)
+
+### Hardware Version Branding
+
+Starting with hardware version 2.0, the adapter supports **unified firmware** that automatically detects the hardware version at runtime. This eliminates the need for separate firmware builds for different hardware versions.
+
+#### Branding Process:
+
+1. **Connect your ST-Link** to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
+
+2. **Run the branding script** using OpenOCD:
+   ```bash
+   cd firmware
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw_v2.tcl -c "brand_hw_v2; exit"
+   ```
+
+3. **Verify the branding** (optional):
+   ```bash
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw_v2.tcl -c "verify_hardware_version; exit"
+   ```
+
+The branding process writes a small hardware information structure to the last 16 bytes of flash memory (0x08007FF0). This includes:
+- Magic identifier ("HWVR")
+- Version numbers (2.0 for v2.x hardware)
+- CRC16 checksum for data integrity
+
+**Important Notes:**
+- Branding only needs to be done **once per device**
+- The branding survives firmware updates (it's stored separately from application firmware)
+- Hardware Version 1.0 boards don't need branding and work with unified firmware as-is
+- You can erase the branding using: `openocd ... -c "erase_hardware_version; exit"`
+<br>
+<br>
+
+**Firmware Installation Variants**
+
 We've two options to install the firmware. Either via:<br>
 - ST-Link debugger/programmer, for which you need to have access to the adapter PCB's SWDIO pins, or via
 - Open-Mower's UART via STM32 internal bootloader (which can be done with a closed mower)
@@ -88,10 +127,6 @@ We've two options to install the firmware. Either via:<br>
 
 ### Firmware Installation via ST-Link debugger/programmer
 
-#### Requirements
-
-* You need an ST-Link debugger/programmer, like one of the cheap "ST-Link V2" probes from one of the big online retailer.
-* [STLINK Tools](https://github.com/stlink-org/stlink) >= v1.8.0 (earlier versions do **not** support the used STM32C0x MCU)
 
 #### Flash
 

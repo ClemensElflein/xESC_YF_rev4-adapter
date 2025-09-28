@@ -7,6 +7,8 @@
     <option name="modm:build:project.name">xESC_YF_rev4_v2-Firmware</option>
     <option name="modm:build:build.path">../build/v2</option>
     <option name="modm:target">stm32c011f6p6</option>
+    <!-- Reserve last 2KB page (page 15) for hardware version data -->
+    <option name="modm:platform:cortex-m:linkerscript.flash_reserved">2048</option>
   </options>
   <collectors>
     <!-- You need to install https://xpack-dev-tools.github.io/openocd-xpack/ >= 0.12.0-3 for STM32C0x support -->
