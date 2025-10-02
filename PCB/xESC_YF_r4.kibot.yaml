@@ -4,8 +4,6 @@ kibot:
 preflight:
   run_erc: true
   run_drc: true
-  erc_warnings: false
-  drc_warnings: false
 
   set_text_variables:
     - name: 'git_version'
