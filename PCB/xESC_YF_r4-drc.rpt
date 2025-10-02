@@ -1,0 +1,58 @@
+** Drc report for xESC_YF_r4.kicad_pcb **
+** Created on 2025-10-02T22:33:16+0200 **
+
+** Found 16 DRC violations **
+[lib_footprint_mismatch]: Footprint "PinHeader_1x05_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(231,0600 mm, 108,2400 mm): Footprint J3
+[lib_footprint_mismatch]: Footprint "PinHeader_1x03_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(258,0500 mm, 105,7000 mm): Footprint J2
+[lib_footprint_mismatch]: Footprint "CP_EIA-3216-10_Kemet-I" stimmt nicht mit Kopie in Bibliothek "Capacitor_Tantalum_SMD" überein.
+    Lokale Überschreibung; warning
+    @(246,9500 mm, 129,7000 mm): Footprint C3
+[lib_footprint_mismatch]: Footprint "SOT-23" stimmt nicht mit Kopie in Bibliothek "Package_TO_SOT_SMD" überein.
+    Lokale Überschreibung; warning
+    @(246,3000 mm, 110,7125 mm): Footprint Q3
+[lib_footprint_mismatch]: Footprint "SOT-23" stimmt nicht mit Kopie in Bibliothek "Package_TO_SOT_SMD" überein.
+    Lokale Überschreibung; warning
+    @(241,4000 mm, 118,2125 mm): Footprint Q4
+[lib_footprint_mismatch]: Footprint "SOT-23" stimmt nicht mit Kopie in Bibliothek "Package_TO_SOT_SMD" überein.
+    Lokale Überschreibung; warning
+    @(266,1000 mm, 110,5000 mm): Footprint Q2
+[lib_footprint_mismatch]: Footprint "SOT-23" stimmt nicht mit Kopie in Bibliothek "Package_TO_SOT_SMD" überein.
+    Lokale Überschreibung; warning
+    @(265,0000 mm, 126,5000 mm): Footprint Q1
+[lib_footprint_mismatch]: Footprint "TSSOP-20_4.4x6.5mm_P0.65mm" stimmt nicht mit Kopie in Bibliothek "Package_SO" überein.
+    Lokale Überschreibung; warning
+    @(254,0000 mm, 117,0000 mm): Footprint U2
+[lib_footprint_mismatch]: Footprint "PinHeader_1x05_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(231,0600 mm, 131,1000 mm): Footprint J4
+[lib_footprint_mismatch]: Footprint "PinHeader_1x06_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(264,0800 mm, 105,7000 mm): Footprint J7
+[lib_footprint_mismatch]: Footprint "PinHeader_1x06_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(264,0800 mm, 131,1000 mm): Footprint J8
+[lib_footprint_mismatch]: Footprint "PinHeader_2x02_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(274,2400 mm, 112,0500 mm): Footprint J10
+[lib_footprint_mismatch]: Footprint "PinHeader_2x02_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(274,2400 mm, 119,6700 mm): Footprint J9
+[lib_footprint_mismatch]: Footprint "PinHeader_2x02_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(274,2400 mm, 127,2900 mm): Footprint J6
+[lib_footprint_mismatch]: Footprint "PinHeader_1x09_P2.54mm_Vertical" stimmt nicht mit Kopie in Bibliothek "Connector_PinHeader_2.54mm" überein.
+    Lokale Überschreibung; warning
+    @(231,0500 mm, 105,7000 mm): Footprint J1
+[lib_footprint_mismatch]: Footprint "SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" stimmt nicht mit Kopie in Bibliothek "Jumper" überein.
+    Lokale Überschreibung; warning
+    @(241,8000 mm, 126,1000 mm): Footprint JP1
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **
