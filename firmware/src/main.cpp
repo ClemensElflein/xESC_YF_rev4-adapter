@@ -21,6 +21,7 @@
 #include "LedSeq.hpp"
 #include "board.hpp"
 #include "config.h"
+#include "hardware_version.h"
 #ifdef CRC // FIXME remove modm/STM32 CRC or use it
 #undef CRC
 #endif
@@ -116,6 +117,17 @@ void sendMessage(void* message, size_t size) {
 void update_faults() {
     uint32_t faults = 0;
 
+    // FAULT_WRONG_HW_VERSION - Check if wrong hardware version firmware is running
+#ifdef HW_V1
+    if (!hw_version::IsV1()) {  // V1 firmware doesn't detected a flashed V1 HWInfo (or no HWInfo struct)
+        faults |= FAULT_WRONG_HW_VERSION;
+    }
+#else  // HW_V2
+    if (!hw_version::IsV2()) {  // V2 firmware doesn't detected a flashed V2 HWinfo
+        faults |= FAULT_WRONG_HW_VERSION;
+    }
+#endif
+
     // FAULT_UNINITIALIZED
     if (!settings_valid) {
         faults |= FAULT_UNINITIALIZED;
@@ -160,7 +172,9 @@ void update_faults() {
             ledseq_green.off();
         }
         // Red LED by priority
-        if (faults & FAULT_OPEN_LOAD) {
+        if (faults & FAULT_WRONG_HW_VERSION) {
+            ledseq_red.on(); // Red LED steady on (clear indication)
+        } else if (faults & FAULT_OPEN_LOAD) {
             ledseq_red.blink({ .on = 125, .off = 125 }); // Quick blink (4Hz)
         } else if (faults & (FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT)) {
             ledseq_red.blink({ .on = 250, .off = 250 }); // Fast blink (2Hz)
@@ -404,11 +418,19 @@ MODM_ISR(TIM1_CC) {
 int main() {
     Board::initialize();
 
-#ifdef HW_V1
-    disable_nrst(); // Check NRST pin. Will flash if wrong and reset
-#endif
+    // Initialize hardware version detection
+    hw_version::Init();
 
-    vm_switch::DiagEnable::set(); // VM-Switch diagnostics enable
+#ifdef HW_V1
+    if (hw_version::IsV1()) {
+        disable_nrst(); // Check NRST pin. Will flash if wrong and reset
+        vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - safe to enable
+    }
+#else
+    if (!hw_version::IsV1()) {
+        vm_switch::DiagEnable::set(); // V2+ hardware - always safe to enable diagnostics
+    }
+#endif
 
     AdcSampler::init(); // Init & run AdcSampler
 

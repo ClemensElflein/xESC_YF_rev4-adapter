@@ -7,16 +7,17 @@
 #define XESCYFR4_MSG_TYPE_CONTROL 2
 #define XESCYFR4_MSG_TYPE_SETTINGS 3
 
-#define FAULT_UNINITIALIZED  (1u << 0)
-#define FAULT_WATCHDOG       (1u << 1)
-#define FAULT_UNDERVOLTAGE   (1u << 2)
-#define FAULT_OVERVOLTAGE    (1u << 3)
-#define FAULT_OVERCURRENT    (1u << 4)
-#define FAULT_OVERTEMP_MOTOR (1u << 5)
-#define FAULT_OVERTEMP_PCB   (1u << 6)
-#define FAULT_INVALID_HALL   (1u << 7)
-#define FAULT_INTERNAL_ERROR (1u << 8)
-#define FAULT_OPEN_LOAD      (1u << 9)
+#define FAULT_UNINITIALIZED    (1u << 0)
+#define FAULT_WATCHDOG         (1u << 1)
+#define FAULT_UNDERVOLTAGE     (1u << 2)
+#define FAULT_OVERVOLTAGE      (1u << 3)
+#define FAULT_OVERCURRENT      (1u << 4)
+#define FAULT_OVERTEMP_MOTOR   (1u << 5)
+#define FAULT_OVERTEMP_PCB     (1u << 6)
+#define FAULT_INVALID_HALL     (1u << 7)
+#define FAULT_INTERNAL_ERROR   (1u << 8)
+#define FAULT_OPEN_LOAD        (1u << 9)
+#define FAULT_WRONG_HW_VERSION (1u << 10)
 
 #pragma pack(push, 1)
 struct XescYFR4StatusPacket {

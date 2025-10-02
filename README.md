@@ -260,7 +260,8 @@ Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yar
   <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>  <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
   <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
   <tr><td>0.5Hz flash<br>(short flash every 2 seconds)</td><td></td><td>Shutdown (Sleep) triggered by OpenMower Pico FW</td></tr>
-  <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>
+  <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>  
+  <tr><td></td><td>on</td><td><b>Wrong hardware version firmware flashed!</b><br>Motor disabled for safety. Flash correct firmware</td></tr>
   <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected).<br> <b>WARNING:</b> Do not connect the motor while the adapter is powered!</td></tr>
   <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
   <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
@@ -324,7 +325,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                                                                                                        |
   | ------- | :----------: | --------------------------------------------------------------------------------------------------------------------------- |
-  | 0.3.0   |  2025-08-22  | - Add support for Rev4-ESC hardware v2.x                                                                                    |
+  | 0.3.0   |  2025-10-02  | - Add support for Rev4-ESC hardware v2.x<br>- Add hardware/firmware version protection with safety fault detection          |
   | 0.2.3   |  2024-10-03  | - Add RPM to status package                                                                                                 |
   | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART                                                                                   |
   | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current                                 |
