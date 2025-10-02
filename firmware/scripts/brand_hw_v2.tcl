@@ -99,7 +99,6 @@ proc brand_hw_v2 {} {
     
     echo ""
     echo "Hardware Version 2.0 branding completed successfully!"
-    echo "Device is now branded as HW_V2"
     echo ""
 }
 
@@ -130,7 +129,7 @@ proc verify_hardware_version {} {
         echo "  CRC16: [format "0x%04X" $crc]"
         
         if {$major == 2 && $minor == 0} {
-            echo "✓ Device is correctly branded as HW_V2"
+            echo "✓ Device is correctly branded as v2.0"
         } else {
             echo "⚠ Unexpected version: $major.$minor (expected: 2.0)"
         }
@@ -157,7 +156,6 @@ proc erase_hardware_version {} {
     flash erase_sector 0 15 15
     
     echo "Hardware version info erased!"
-    echo "Device will now default to HW_V1 behavior"
     echo ""
 }
 
@@ -169,7 +167,7 @@ echo ""
 echo "Available commands:"
 echo "  brand_hw_v2             - Brand device as Hardware Version 2.0"
 echo "  verify_hardware_version - Read and verify current hardware version"
-echo "  erase_hardware_version  - Erase hardware version (revert to HW_V1 default)"
+echo "  erase_hardware_version  - Erase hardware version (revert to v1.x default)"
 echo ""
 echo "Usage example:"
 echo "  openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw_v2.tcl -c 'brand_hw_v2; exit'"

@@ -105,15 +105,12 @@ Starting with hardware version 2.0, the adapter supports **unified firmware** th
    packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw_v2.tcl -c "verify_hardware_version; exit"
    ```
 
-The branding process writes a small hardware information structure to the last 16 bytes of flash memory (0x08007FF0). This includes:
-- Magic identifier ("HWVR")
-- Version numbers (2.0 for v2.x hardware)
-- CRC16 checksum for data integrity
+The branding process writes a small hardware information structure to the last page of flash memory.
 
 **Important Notes:**
 - Branding only needs to be done **once per device**
 - The branding survives firmware updates (it's stored separately from application firmware)
-- Hardware Version 1.0 boards don't need branding and work with unified firmware as-is
+- Hardware Version 1.x boards don't need branding and work with unified firmware as-is
 - You can erase the branding using: `openocd ... -c "erase_hardware_version; exit"`
 <br>
 <br>
