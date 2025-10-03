@@ -85,5 +85,4 @@ namespace hw_version {
 #endif
         }
     }
-
 }  // namespace hw_version

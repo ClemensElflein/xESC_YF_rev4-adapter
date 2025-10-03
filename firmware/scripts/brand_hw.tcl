@@ -252,7 +252,8 @@ proc create_hw_data_file {major minor filename} {
     
     set fp [open $filename "wb"]
     
-    # Write magic "HWVR" (0x48575652) in little-endian
+    # Write magic number 0x52565748 in little-endian byte order
+    # This represents "HWVR" when interpreted correctly
     puts -nonewline $fp [format "%c%c%c%c" 0x48 0x57 0x56 0x52]
     
     # Write version and LED configuration + reserved bytes (10 bytes total)

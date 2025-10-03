@@ -118,7 +118,7 @@ For current hardware versions (v2.1, v3.0), you can easily create new hardware d
 
 1. **Create hardware data file**:
    ```bash
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "create_hw_data_file 2 0 scripts/hw_data_v2.1.bin; exit"
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "create_hw_data_file 2 1 scripts/hw_data_v2.1.bin; exit"
    ```
 
 2. **Calculate and fix CRC** (automatically updates the .bin file):
