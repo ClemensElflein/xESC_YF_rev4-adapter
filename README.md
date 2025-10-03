@@ -88,30 +88,59 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ### Hardware Version Branding
 
-Starting with hardware version 2.0, the adapter supports **unified firmware** that automatically detects the hardware version at runtime. This eliminates the need for separate firmware builds for different hardware versions.
+Starting with hardware version 2.0, the adapter maintains **separate firmware builds** for different hardware versions (V1/V2) but includes **hardware version protection** that prevents wrong firmware from running on incompatible hardware. This ensures optimal performance while providing safety mechanisms.
 
 #### Branding Process:
 
 1. **Connect your ST-Link** to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
 
-2. **Run the branding script** using OpenOCD:
+2. **Run the branding script** using OpenOCD (replace with your hardware data file):
    ```bash
    cd firmware
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw_v2.tcl -c "brand_hw_v2; exit"
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "brand_hw scripts/hw_data_v2.0.bin 1; exit"
    ```
 
 3. **Verify the branding** (optional):
    ```bash
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw_v2.tcl -c "verify_hardware_version; exit"
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "verify_hardware_version; exit"
    ```
 
-The branding process writes a small hardware information structure to the last page of flash memory.
+4. **Check Write Protection status** (optional):
+   ```bash
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "show_wrp_status; exit"
+   ```
+
+The branding process writes a small hardware information structure to the last page of flash memory and **protects it with hardware-level Write Protection (WRP)** to ensure it survives firmware updates.
+
+#### Creating Hardware Data for New Versions
+
+For current hardware versions (v2.1, v3.0), you can easily create new hardware data files:
+
+1. **Create hardware data file**:
+   ```bash
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "create_hw_data_file 2 0 scripts/hw_data_v2.1.bin; exit"
+   ```
+
+2. **Calculate and fix CRC** (automatically updates the .bin file):
+   ```bash
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "calculate_and_fix_crc scripts/hw_data_v2.1.bin; exit"
+   ```
+
+3. **Brand the hardware** with the new data file:
+   ```bash
+   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "brand_hw scripts/hw_data_v2.1.bin 1; exit"
+   ```
 
 **Important Notes:**
 - Branding only needs to be done **once per device**
-- The branding survives firmware updates (it's stored separately from application firmware)
-- Hardware Version 1.x boards don't need branding and work with unified firmware as-is
-- You can erase the branding using: `openocd ... -c "erase_hardware_version; exit"`
+- The branding **truly survives firmware updates** thanks to STM32 Write Protection (WRP)
+- **WRP protection may require a power cycle** (unplug/replug power) to fully activate
+- Hardware Version 1.x boards don't need branding (they're automatically detected as V1)
+- Wrong firmware will be detected and safely disabled with distinctive LED error indication
+- UART recovery remains available even with wrong firmware flashed
+- The `1` parameter enables WRP protection (recommended for production)
+- You can disable WRP protection using: `openocd ... -c "disable_wrp_protection; exit"`
+- **Verify WRP status after power cycle**: `openocd ... -c "show_wrp_status; exit"`
 <br>
 <br>
 
@@ -284,7 +313,7 @@ Once done:
 3. Build the modm library files:<br>
   `lbuild -c project.hw_v<1|2>.xml build`
 4. Compile the firmware binary:<br>
-  `scons bin`
+  `scons build profile=<release|debug> project=project.hw_v<1|2>.xml`
 5. Flash firmware:<br>
   For this, a specific [xPack OpenOCD](https://xpack-dev-tools.github.io/openocd-xpack/) version is required. Either install your own one, or use the one within the package folder by:<br>
   `export MODM_OPENOCD_BINARY=../packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd`<br>

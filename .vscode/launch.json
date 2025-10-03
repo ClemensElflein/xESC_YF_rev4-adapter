@@ -8,21 +8,30 @@
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
+            "serverpath": "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd",
+            "searchDir": [
+                "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/openocd/scripts"
+            ],
             "device": "STM32C011F6P6",
-            "runToMain": true,
+            "runToEntryPoint": "main",
             "configFiles": [
                 "modm/openocd.cfg",
             ],
         },
         {
-            "name": "Debug (Debug, Scons, STM32C011F6P6)",
+            "name": "Debug V2 (Debug, Scons, STM32C011F6P6)",
             "cwd": "${workspaceFolder}/firmware/src",
-            "executable": "../build/scons-debug/xESC_YF_rev4-Firmware.elf",
+            "executable": "../build/v2/scons-debug/xESC_YF_rev4_v2-Firmware.elf",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
+            "serverpath": "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd",
+            "searchDir": [
+                "${workspaceFolder}/firmware/packages/xpack-openocd-0.12.0-3-linux-x64/openocd/scripts"
+            ],
             "device": "STM32C011F6P6",
-            "runToMain": true,
+            //"showDevDebugOutput": "raw",
+            "runToEntryPoint": "main",
             "configFiles": [
                 "modm/openocd.cfg",
             ],
