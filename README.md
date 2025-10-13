@@ -290,10 +290,10 @@ Once done:
 2. Change into the project source directory:<br>
   `cd xESC_YF_rev4-adapter/firmware/src`
 3. Build the modm library files:<br>
-  `lbuild -c project.hw_v<1|2>.xml build`
+  `lbuild build`
 4. Compile the firmware binary:<br>
-  `scons build profile=<release|debug> project=project.hw_v<1|2>.xml`
-5. Flash firmware:<br>
+  `scons build profile=<release|debug>`
+1. Flash firmware:<br>
   For this, a specific [xPack OpenOCD](https://xpack-dev-tools.github.io/openocd-xpack/) version is required. Either install your own one, or use the one within the package folder by:<br>
   `export MODM_OPENOCD_BINARY=../packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd`<br>
   Afterwards flash the firmware via:<br>

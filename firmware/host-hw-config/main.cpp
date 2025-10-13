@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <cstring>
 
-// Include the simple flash config (no GPIO dependencies)
+// Include the flash config
 #include "../include/hardware/flash_config.hpp"
 
 // Hardware version configurations
@@ -44,7 +44,7 @@ uint16_t CalculateCrc16CcittFalse(const uint8_t* data, uint16_t length) {
 }
 
 bool GenerateConfigBinary(const HardwareVersionConfig& hw_config, const std::string& output_file) {
-    // Create the minimal flash config structure
+    // Create the flash config structure
     hardware::FlashHardwareConfig flash_config;
 
     // Set magic string using the shared constant

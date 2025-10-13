@@ -21,7 +21,7 @@
 #include "LedSeq.hpp"
 #include "board.hpp"
 #include "config.h"
-#include "hardware_version.h"
+#include "hardware/hardware_init.hpp"
 #ifdef CRC // FIXME remove modm/STM32 CRC or use it
 #undef CRC
 #endif
@@ -117,16 +117,16 @@ void sendMessage(void* message, size_t size) {
 void update_faults() {
     uint32_t faults = 0;
 
-    // FAULT_WRONG_HW_VERSION - Check if wrong hardware version firmware is running
-#ifdef HW_V1
-    if (!hw_version::IsV1()) {  // V1 firmware doesn't detected a flashed V1 HWInfo (or no HWInfo struct)
-        faults |= FAULT_WRONG_HW_VERSION;
-    }
-#else  // HW_V2
-    if (!hw_version::IsV2()) {  // V2 firmware doesn't detected a flashed V2 HWinfo
-        faults |= FAULT_WRONG_HW_VERSION;
-    }
-#endif
+    /*    // FAULT_WRONG_HW_VERSION - Check if wrong hardware version firmware is running
+    #ifdef HW_V1
+        if (!hw_version::IsV1()) {  // V1 firmware doesn't detected a flashed V1 HWInfo (or no HWInfo struct)
+            faults |= FAULT_WRONG_HW_VERSION;
+        }
+    #else  // HW_V2
+        if (!hw_version::IsV2()) {  // V2 firmware doesn't detected a flashed V2 HWinfo
+            faults |= FAULT_WRONG_HW_VERSION;
+        }
+    #endif */
 
     // FAULT_UNINITIALIZED
     if (!settings_valid) {
@@ -418,19 +418,36 @@ MODM_ISR(TIM1_CC) {
 int main() {
     Board::initialize();
 
-    // Initialize hardware version detection
-    hw_version::Init();
+    // Load hardware info from flash OTP area
+    const auto& flashConfig = hardware::loadFromFlash();
 
-#ifdef HW_V1
-    if (hw_version::IsV1()) {
-        disable_nrst(); // Check NRST pin. Will flash if wrong and reset
-        vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - safe to enable
-    }
-#else
-    if (!hw_version::IsV1()) {
-        vm_switch::DiagEnable::set(); // V2+ hardware - always safe to enable diagnostics
+    // Validate magic string and CRC
+#ifdef PROTO_DEBUG
+    if (hardware::isValidFlashConfig(flashConfig)) {
+        MODM_LOG_INFO << "Flash OTP config valid: v"
+            << static_cast<int>(flashConfig.version.major) << "."
+            << static_cast<int>(flashConfig.version.minor)
+            << " (CRC: 0x" << modm::hex << flashConfig.crc16 << modm::ascii << ")"
+            << modm::endl;
+    } else {
+        // Handle invalid flash data (non-programmed flash (all 0xFF) and corrupted data)
+        MODM_LOG_INFO << "Flash config invalid (magic/CRC), assuming v1.0 hardware" << modm::endl;
     }
 #endif
+
+    // Initialize hardware-specific components  
+    hardware::initializeHardware(flashConfig);
+
+    /*#ifdef HW_V1
+        if (hw_version::IsV1()) {
+            disable_nrst(); // Check NRST pin. Will flash if wrong and reset
+            vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - safe to enable
+        }
+    #else
+        if (!hw_version::IsV1()) {
+            vm_switch::DiagEnable::set(); // V2+ hardware - always safe to enable diagnostics
+        }
+    #endif*/
 
     AdcSampler::init(); // Init & run AdcSampler
 
@@ -441,7 +458,7 @@ int main() {
     status.direction = 0; // Our motor has only one direction
 
     // SA (Hall) input - Capture/Compare timer
-    Timer1::connect<motor::SATimChan>();
+    /*Timer1::connect<motor::SATimChan>();
     Timer1::enable();
     Timer1::setMode(Timer1::Mode::UpCounter);
     Timer1::setPrescaler(SA_TIMER_PRESCALER);
@@ -462,14 +479,14 @@ int main() {
     Timer14::enableInterrupt(Timer14::Interrupt::Update);
     Timer14::enableInterruptVector(true, 26);
     Timer14::applyAndReset();
-    Timer14::start();
+    Timer14::start();*/
 
     // LED blink code "Boot up successful"
     ledseq_green.blink({ .limit_blink_cycles = 3, .fulfill = true }); // Default = 200ms ON, 200ms OFF
     ledseq_red.blink({ .limit_blink_cycles = 3, .fulfill = true });   // Default = 200ms ON, 200ms OFF
 
     while (true) {
-        handle_host_rx_buffer();
+        //handle_host_rx_buffer();
         ledseq_green.loop();
         ledseq_red.loop();
     }

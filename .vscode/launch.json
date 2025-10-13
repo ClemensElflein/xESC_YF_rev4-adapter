@@ -19,9 +19,9 @@
             ],
         },
         {
-            "name": "Debug V2 (Debug, Scons, STM32C011F6P6)",
+            "name": "Debug (Debug, Scons, STM32C011F6P6)",
             "cwd": "${workspaceFolder}/firmware/src",
-            "executable": "../build/v2/scons-debug/xESC_YF_rev4_v2-Firmware.elf",
+            "executable": "../build/firmware/scons-debug/xESC_YF_rev4-Firmware.elf",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
