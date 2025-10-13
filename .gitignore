@@ -37,3 +37,6 @@ firmware/src/modm/
 firmware/src/SConstruct
 firmware/src/project.*xml.log
 firmware/src/.sconsign.dblite
+firmware/host-hw-config/modm
+firmware/host-hw-config/.sconsign.dblite
+firmware/host-hw-config/SConstruct

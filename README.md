@@ -88,59 +88,38 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ### Hardware Version Branding
 
-Starting with hardware version 2.0, the adapter maintains **separate firmware builds** for different hardware versions (V1/V2) but includes **hardware version protection** that prevents wrong firmware from running on incompatible hardware. This ensures optimal performance while providing safety mechanisms.
+Starting with hardware version 2.0, the adapter maintains a **unified firmware build** for different hardware versions. 
+For this the MCU needs to be branded by flashing a hardware config into the OTP area.
 
 #### Branding Process:
 
+1. **Generate** Hardware Config Binaries
+
+   ```bash
+   cd firmware/host-hw-config
+   lbuild build
+   scons
+   ```
+
+   This creates i.e.:
+   - `hw_config_v1.0.bin` - Hardware v1.0 configuration
+   - `hw_config_v2.0.bin` - Hardware v2.0 configuration
+  
 1. **Connect your ST-Link** to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
 
-2. **Run the branding script** using OpenOCD (replace with your hardware data file):
+1. **Flash** Hardware Config
+
    ```bash
-   cd firmware
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "brand_hw scripts/hw_data_v2.0.bin 1; exit"
+   # Flash/Brand v2.0 config with ST-Link/V2
+   STM32_Programmer_CLI -c port=SWD -d hw_config_v2.0.bin 0x1FFF7000
    ```
 
-3. **Verify the branding** (optional):
-   ```bash
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "verify_hardware_version; exit"
-   ```
-
-4. **Check Write Protection status** (optional):
-   ```bash
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "show_wrp_status; exit"
-   ```
-
-The branding process writes a small hardware information structure to the last page of flash memory and **protects it with hardware-level Write Protection (WRP)** to ensure it survives firmware updates.
-
-#### Creating Hardware Data for New Versions
-
-For current hardware versions (v2.1, v3.0), you can easily create new hardware data files:
-
-1. **Create hardware data file**:
-   ```bash
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "create_hw_data_file 2 1 scripts/hw_data_v2.1.bin; exit"
-   ```
-
-2. **Calculate and fix CRC** (automatically updates the .bin file):
-   ```bash
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "calculate_and_fix_crc scripts/hw_data_v2.1.bin; exit"
-   ```
-
-3. **Brand the hardware** with the new data file:
-   ```bash
-   packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd -f interface/stlink.cfg -f target/stm32c0x.cfg -f scripts/brand_hw.tcl -c "brand_hw scripts/hw_data_v2.1.bin 1; exit"
-   ```
+The branding process writes a small hardware information structure to the first two OTP dwords. **Take attention** that OTP flash can be written only once!
 
 **Important Notes:**
-- Branding only needs to be done **once per device**
-- The branding **truly survives firmware updates** thanks to STM32 Write Protection (WRP)
-- **WRP protection may require a power cycle** (unplug/replug power) to fully activate
-- Hardware Version 1.x boards don't need branding (they're automatically detected as V1)
-- Wrong firmware will be detected and safely disabled with distinctive LED error indication
-- UART recovery remains available even with wrong firmware flashed
-- The `1` parameter enables WRP protection (recommended for production)
-- You can disable WRP protection using: `openocd ... -c "disable_wrp_protection; exit"`
-- **Verify WRP status after power cycle**: `openocd ... -c "show_wrp_status; exit"`
+- Branding only needs to be done **once per device** as well as it can be done only once
+- The branding **truly survives firmware updates** (because OTP flash can be written only once)
+- Hardware Version 1.x boards don't need branding. Non-branded devices get assumed to be v1.0 hardware
 <br>
 <br>
 

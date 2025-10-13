@@ -1,0 +1,22 @@
+<library>
+  <repositories>
+    <repository><path>../ext/modm/repo.lb</path></repository>
+  </repositories>
+
+  <options>
+    <option name="modm:build:cmake:include_cmakelists">True</option>
+    <option name="modm:build:project.name">HW_Config_Generator</option>
+    <option name="modm:build:build.path">../build/hw_config_generator</option>
+    <option name="modm:target">hosted-linux</option>
+  </options>
+
+  <collectors>
+    <!-- Add hardware config include path -->
+    <collect name="modm:build:path.include">../include</collect>
+  </collectors>
+
+  <modules>
+    <module>modm:build:scons</module>
+    <module>modm:debug</module>
+  </modules>
+</library>
