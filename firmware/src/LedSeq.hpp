@@ -38,7 +38,9 @@
 
 template <class GpioStatic>
 class LedSeq {
+public:
     //  LED blink properties with mostly used blink defaults
+    // TODO: Should become private again, once DummyLed got removed
     struct LedProps {
         uint8_t mode = LEDSEQ_MODE_BLINK;  // Mode of operation
         uint32_t on = 200;                 // On time in ms (only relevant for blink mode)
@@ -52,7 +54,7 @@ class LedSeq {
         }
     };
 
-   private:
+private:
     struct LedState {
         LedProps props;
         uint8_t state = LEDSEQ_STATE_UNDEF;  // Current state in sequence (idle, on, off, post_pause, ...)
@@ -69,19 +71,19 @@ class LedSeq {
         loop();
     }
 
-   public:
+public:
     /**
      * @brief Shorthand for LED-On (once active sequence is done (or !fulfill))
      */
     void on(void) {
-        _next({.mode = LEDSEQ_MODE_ON, .post_pause = 0});
+        _next({ .mode = LEDSEQ_MODE_ON, .post_pause = 0 });
     }
 
     /**
      * @brief Shorthand for LED-Off (once active sequence is done (or !fulfill))
      */
     void off(void) {
-        _next({.mode = LEDSEQ_MODE_OFF, .post_pause = 0});
+        _next({ .mode = LEDSEQ_MODE_OFF, .post_pause = 0 });
     }
 
     /**
@@ -111,7 +113,7 @@ class LedSeq {
         // Make _next _active when
         if (_next_state.state == LEDSEQ_STATE_IDLE &&                                           // _next job exists
             (_active_state.state == LEDSEQ_STATE_UNDEF ||                                       // _active finished
-             (!_active_state.props.fulfill && !(_next_state.props == _active_state.props)))) {  // _active is not fulfillable and _next differs to _active
+                (!_active_state.props.fulfill && !(_next_state.props == _active_state.props)))) {  // _active is not fulfillable and _next differs to _active
             _active_state = _next_state;
             _next_state.state = LEDSEQ_STATE_UNDEF;
             _active_state.next_state_cycle_millis = now;  // Just activated = next cycle = now
@@ -121,49 +123,49 @@ class LedSeq {
             return true;
 
         switch (_active_state.props.mode) {
-            case LEDSEQ_MODE_ON:
+        case LEDSEQ_MODE_ON:
+            _gpio.set();  // On
+            // digitalWrite(_pin, HIGH);  // On
+            _active_state.state = LEDSEQ_STATE_UNDEF;
+            break;
+
+        case LEDSEQ_MODE_OFF:
+            _gpio.reset();  // Off
+            // digitalWrite(_pin, LOW);  // Off
+            _active_state.state = LEDSEQ_STATE_UNDEF;
+            break;
+
+        case LEDSEQ_MODE_BLINK:
+            switch (_active_state.state) {
+            case LEDSEQ_STATE_IDLE:
+                _active_state.blink_cycles = 0;
+                /* FALLTHRU */
+            case LEDSEQ_STATE_NEXT_BLINK:
                 _gpio.set();  // On
                 // digitalWrite(_pin, HIGH);  // On
-                _active_state.state = LEDSEQ_STATE_UNDEF;
+                _active_state.next_state_cycle_millis = now + _active_state.props.on;
+                _active_state.state = LEDSEQ_STATE_ON;
                 break;
-
-            case LEDSEQ_MODE_OFF:
+            case LEDSEQ_STATE_ON:
                 _gpio.reset();  // Off
                 // digitalWrite(_pin, LOW);  // Off
+                _active_state.next_state_cycle_millis = now + _active_state.props.off;
+                _active_state.state = LEDSEQ_STATE_OFF;
+                break;
+            case LEDSEQ_STATE_OFF:  // One complete on/off cycle fulfilled
+                _active_state.blink_cycles++;
+                if (!_active_state.props.limit_blink_cycles || _active_state.blink_cycles < _active_state.props.limit_blink_cycles) {
+                    _active_state.state = LEDSEQ_STATE_NEXT_BLINK;
+                    loop();
+                    break;
+                }
+                _active_state.next_state_cycle_millis = now + _active_state.props.post_pause;
+                _active_state.state = LEDSEQ_STATE_POST_PAUSE;
+                break;
+            case LEDSEQ_STATE_POST_PAUSE:  // Full sequence done
                 _active_state.state = LEDSEQ_STATE_UNDEF;
                 break;
-
-            case LEDSEQ_MODE_BLINK:
-                switch (_active_state.state) {
-                    case LEDSEQ_STATE_IDLE:
-                        _active_state.blink_cycles = 0;
-                        /* FALLTHRU */
-                    case LEDSEQ_STATE_NEXT_BLINK:
-                        _gpio.set();  // On
-                        // digitalWrite(_pin, HIGH);  // On
-                        _active_state.next_state_cycle_millis = now + _active_state.props.on;
-                        _active_state.state = LEDSEQ_STATE_ON;
-                        break;
-                    case LEDSEQ_STATE_ON:
-                        _gpio.reset();  // Off
-                        // digitalWrite(_pin, LOW);  // Off
-                        _active_state.next_state_cycle_millis = now + _active_state.props.off;
-                        _active_state.state = LEDSEQ_STATE_OFF;
-                        break;
-                    case LEDSEQ_STATE_OFF:  // One complete on/off cycle fulfilled
-                        _active_state.blink_cycles++;
-                        if (!_active_state.props.limit_blink_cycles || _active_state.blink_cycles < _active_state.props.limit_blink_cycles) {
-                            _active_state.state = LEDSEQ_STATE_NEXT_BLINK;
-                            loop();
-                            break;
-                        }
-                        _active_state.next_state_cycle_millis = now + _active_state.props.post_pause;
-                        _active_state.state = LEDSEQ_STATE_POST_PAUSE;
-                        break;
-                    case LEDSEQ_STATE_POST_PAUSE:  // Full sequence done
-                        _active_state.state = LEDSEQ_STATE_UNDEF;
-                        break;
-                }
+            }
         }
         return true;
     }

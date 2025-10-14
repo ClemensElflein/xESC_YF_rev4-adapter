@@ -31,7 +31,6 @@ namespace hardware {
 
     // Load hardware config from flash OTP area
     inline const FlashHardwareConfig& loadFromFlash() {
-        // Access flash OTP data directly
         const FlashHardwareConfig* flash_ptr =
             reinterpret_cast<const FlashHardwareConfig*>(FLASH_HARDWARE_CONFIG_ADDRESS);
 
@@ -53,6 +52,7 @@ namespace hardware {
 
         return calculated_crc == config.crc16;
     }
+
     // Hardware config dispatcher - calls the appropriate templated function based on version
     template<typename Function>
     auto dispatchHardwareConfig(const FlashHardwareConfig& flashConfig, Function&& func) {

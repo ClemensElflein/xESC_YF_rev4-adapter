@@ -22,13 +22,14 @@
 #include "board.hpp"
 #include "config.h"
 #include "hardware/hardware_init.hpp"
+#include "hardware/hardware_controller.hpp"
 #ifdef CRC // FIXME remove modm/STM32 CRC or use it
 #undef CRC
 #endif
 #include "AdcSampler.hpp"
 #include "CRC.h"
-#include "disable_nrst.h"
-#include "jump_system_bootloader.h"
+// FIXME later and integrate LED stuff #include "disable_nrst.h"
+// FIXME later and integrate LED stuff #include "jump_system_bootloader.h"
 #include "xesc_yfr4_datatypes.h"
 
 using namespace Board;
@@ -37,17 +38,23 @@ using namespace std;
 
 #define MILLIS modm::Clock::now().time_since_epoch().count()
 
-// LED sequencer
-LedSeq<LedGreen> ledseq_green;
-LedSeq<LedRed> ledseq_red;
-#define LEDSEQ_ERROR_LL_COMM ledseq_red.blink({.on = 20, .off = 30, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = true})
-
-// Host comms (COBS)
-#define COBS_BUFFER_SIZE 100                // Should be at least size of biggest RX/TX message + some COBS overhead bytes
-static uint8_t buffer_rx[COBS_BUFFER_SIZE]; // Serial RX buffer for COBS encoded data up to COBS end marker
+// Global COBS communication variables - used by legacy functions before migration
+#define COBS_BUFFER_SIZE 100
+static uint8_t buffer_rx[COBS_BUFFER_SIZE];
 static unsigned int buffer_rx_idx = 0;
-static uint8_t buffer_tx[COBS_BUFFER_SIZE]; // Serial TX buffer for COBS encoded messages
+static uint8_t buffer_tx[COBS_BUFFER_SIZE];
 COBS cobs;
+
+// Legacy LED interface - provides compatibility for existing functions
+struct DummyLed {
+    void on() {}
+    void off() {}
+    void blink(const LedSeq<modm::platform::GpioUnused>::LedProps&) {}
+    bool loop() { return false; }
+};
+static DummyLed ledseq_green;
+static DummyLed ledseq_red;
+#define LEDSEQ_ERROR_LL_COMM ledseq_red.blink({.on = 20, .off = 30, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = true})
 
 // Misc
 std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {}; // Definition of AdcSampler's private _data buffer (initialized with 0)
@@ -382,7 +389,7 @@ void handle_host_rx_buffer() {
 
         // Bootloader trigger string?
         if (buffer_rx_idx == sizeof BOOTLOADER_TRIGGER_STR && strcmp((const char*)buffer_tx, BOOTLOADER_TRIGGER_STR)) {
-            jump_system_bootloader();
+            //jump_system_bootloader();
         }
     }
 }
@@ -435,8 +442,16 @@ int main() {
     }
 #endif
 
-    // Initialize hardware-specific components  
-    hardware::initializeHardware(flashConfig);
+    // Hardware-specific dispatch to template-optimized controller
+    if (hardware::isValidFlashConfig(flashConfig) && flashConfig.version.major == 2) {
+        // V2.0 Hardware detected
+        hardware::V2Controller controller(hardware::versions::v2_0);
+        controller.run();
+    } else {
+        // V1.0 Hardware (default fallback)  
+        hardware::V1Controller controller(hardware::versions::v1_0);
+        controller.run();
+    }
 
     /*#ifdef HW_V1
         if (hw_version::IsV1()) {
@@ -480,14 +495,4 @@ int main() {
     Timer14::enableInterruptVector(true, 26);
     Timer14::applyAndReset();
     Timer14::start();*/
-
-    // LED blink code "Boot up successful"
-    ledseq_green.blink({ .limit_blink_cycles = 3, .fulfill = true }); // Default = 200ms ON, 200ms OFF
-    ledseq_red.blink({ .limit_blink_cycles = 3, .fulfill = true });   // Default = 200ms ON, 200ms OFF
-
-    while (true) {
-        //handle_host_rx_buffer();
-        ledseq_green.loop();
-        ledseq_red.loop();
-    }
 }

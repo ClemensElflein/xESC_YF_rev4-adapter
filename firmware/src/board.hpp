@@ -62,13 +62,6 @@ namespace Board {
         }
     };
 
-    using LedGreen = GpioC15;
-#ifdef HW_V1
-    using LedRed = GpioC14;
-#else
-    using LedRed = GpioB6;
-#endif
-    using Leds = SoftwareGpioPort<LedGreen, LedRed>;
     /// @}
 
     namespace host {
@@ -150,9 +143,6 @@ namespace Board {
         initialize() {
         SystemClock::enable();
         SysTickTimer::initialize<SystemClock>();
-
-        // Init GPIOs
-        Leds::setOutput(modm::Gpio::Low);
 
         vm_switch::In::setOutput(Gpio::OutputType::PushPull);
         vm_switch::In::reset(); // VM-Switch, VMC = off

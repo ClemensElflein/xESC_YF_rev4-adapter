@@ -21,6 +21,8 @@ namespace hardware {
     // Template-based hardware configuration
     template<typename LedConfigType>
     struct HardwareConfig {
+        using LedConfig = LedConfigType;  // Type alias for template access
+        
         const VersionInfo& version;
         LedConfigType led;
     };
