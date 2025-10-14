@@ -2,6 +2,7 @@
 #include "LedSeq.hpp"
 #include "config/v1_0.hpp"
 #include "config/v2_0.hpp"
+#include "disable_nrst.hpp"
 
 namespace hardware {
 
@@ -36,6 +37,13 @@ namespace hardware {
          * @brief Get reference to red LED sequencer
          */
         auto& getRedLed() { return ledseq_red; }
+
+        /**
+         * @brief Disable NRST pin functionality
+         */
+        void disableNrstPin() {
+            ::disable_nrst(ledseq_green, ledseq_red);
+        }
 
     private:
         const HardwareConfig& hw_config;

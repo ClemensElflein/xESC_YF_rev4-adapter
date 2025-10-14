@@ -24,13 +24,6 @@ namespace hardware {
         // Motor controls are version-dependent and handled by board.hpp
         // We don't need to initialize them here as Board::initialize() handles it
         // The motor namespace already handles version-specific pin assignments
-
-#ifdef PROTO_DEBUG
-        MODM_LOG_INFO << "Hardware initialized: v"
-            << static_cast<int>(hwConfig.version.major) << "."
-            << static_cast<int>(hwConfig.version.minor)
-            << " LEDs configured" << modm::endl;
-#endif
     }
 
     /**

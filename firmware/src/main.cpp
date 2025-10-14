@@ -19,7 +19,6 @@
 
 #include "COBS.h"
 #include "LedSeq.hpp"
-#include "board.hpp"
 #include "config.h"
 #include "hardware/hardware_init.hpp"
 #include "hardware/hardware_controller.hpp"
@@ -28,15 +27,59 @@
 #endif
 #include "AdcSampler.hpp"
 #include "CRC.h"
-// FIXME later and integrate LED stuff #include "disable_nrst.h"
-// FIXME later and integrate LED stuff #include "jump_system_bootloader.h"
 #include "xesc_yfr4_datatypes.h"
+#include "board.hpp"  // Include last to avoid logger conflicts
 
 using namespace Board;
 using namespace std::chrono_literals;
 using namespace std;
 
 #define MILLIS modm::Clock::now().time_since_epoch().count()
+
+// Implementation of jump_system_bootloader (defined in main.cpp to have access to board.hpp)
+void jump_system_bootloader(auto& ledseq_green, auto& ledseq_red) {
+    void (*SysMemBootJump)(void);
+
+    // Disable Timer & interrupts
+    Timer14::disableInterrupt(Timer14::Interrupt::Update);
+    Timer14::disable();
+    Timer1::disableInterrupt(Timer1::Interrupt::CaptureCompare4);
+    Timer1::disable();
+    AdcSampler::disable();
+
+    __disable_irq();    // Disable all interrupts
+    SysTick->CTRL = 0;  // Disable Systick timer
+    // HAL_RCC_DeInit();// Set the clock to the default state
+    Rcc::setHsiSysDivider(Rcc::HsiSysDivider::Div4);  // Default HsiSysDivider = boot frequency (12MHz)
+
+    // Clear Interrupt Enable Register & Interrupt Pending Register
+    for (size_t i = 0; i < sizeof(NVIC->ICER) / sizeof(NVIC->ICER[0]); i++) {
+        NVIC->ICER[i] = 0xFFFFFFFF;
+        NVIC->ICPR[i] = 0xFFFFFFFF;
+    }
+    __enable_irq();  // Re-enable all interrupts
+
+    // Set up the jump to boot loader address + 4
+    SysMemBootJump = (void (*)(void))(*((uint32_t*)((BOOTLOADER_ADDR + 4))));
+
+    // Set the main stack pointer to the boot loader stack
+    __set_MSP(*(uint32_t*)BOOTLOADER_ADDR);
+
+    // Call the function to jump to boot loader location
+    SysMemBootJump();
+
+    // Jump is done successfully, we should never reach here!
+    // Use the provided LED sequencers for indication
+    ledseq_green.on();
+    ledseq_red.off();
+    while (1) {
+        ledseq_green.blink({ .on = 100, .off = 100 });
+        ledseq_red.blink({ .on = 100, .off = 100 });
+        while (ledseq_green.loop() || ledseq_red.loop()) {
+            // Wait for blink cycles to complete
+        }
+    }
+}
 
 // Global COBS communication variables - used by legacy functions before migration
 #define COBS_BUFFER_SIZE 100
@@ -389,7 +432,8 @@ void handle_host_rx_buffer() {
 
         // Bootloader trigger string?
         if (buffer_rx_idx == sizeof BOOTLOADER_TRIGGER_STR && strcmp((const char*)buffer_tx, BOOTLOADER_TRIGGER_STR)) {
-            //jump_system_bootloader();
+            // Legacy compatibility: use dummy LED sequencers for bootloader jump
+            ::jump_system_bootloader(ledseq_green, ledseq_red);
         }
     }
 }
@@ -450,13 +494,13 @@ int main() {
     } else {
         // V1.0 Hardware (default fallback)  
         hardware::V1Controller controller(hardware::versions::v1_0);
+        controller.disableNrstPin(); // Check NRST pin. Will flash if wrong and reset
+        vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - safe to enable
         controller.run();
     }
 
     /*#ifdef HW_V1
         if (hw_version::IsV1()) {
-            disable_nrst(); // Check NRST pin. Will flash if wrong and reset
-            vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - safe to enable
         }
     #else
         if (!hw_version::IsV1()) {

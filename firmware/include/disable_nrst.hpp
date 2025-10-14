@@ -1,6 +1,6 @@
 /*
 
-  disable_nrst.c
+  disable_nrst.hpp
 
   Copyright (c) 2021, olikraus@gmail.com
   Modified 2024, joerg@ebeling.ws
@@ -52,13 +52,14 @@
 #pragma once
 
 #include <modm/platform.hpp>
+#include "LedSeq.hpp"
 
-using namespace Board;
-
-extern LedSeq<LedGreen> ledseq_green;
-extern LedSeq<LedRed> ledseq_red;
-
-void disable_nrst() {
+/**
+ * @brief Hardware-agnostic NRST disable function using existing LED sequencers
+ * @param ledseq_green Reference to existing green LED sequencer
+ * @param ledseq_red Reference to existing red LED sequencer
+ */
+void disable_nrst(auto& ledseq_green, auto& ledseq_red) {
     /* check for the NRST GPIO mode */
     if ((FLASH->OPTR & FLASH_OPTR_NRST_MODE_1) != 0 && (FLASH->OPTR & FLASH_OPTR_NRST_MODE_0) == 0) {
         /* NRST already configured as GPIO..., do nothing */
@@ -66,7 +67,7 @@ void disable_nrst() {
     }
 
     // Waste some time (5s) as wear level flash protection if something fails
-    ledseq_red.blink({.on = 500, .off = 500, .limit_blink_cycles = 5, .fulfill = true});  // Default = 200ms ON, 200ms OFF
+    ledseq_red.blink({ .on = 500, .off = 500, .limit_blink_cycles = 5, .fulfill = true });
     while (ledseq_red.loop());
 
     /* Clear the LOCK bit in FLASH->CR (precondition for option byte flash) */
@@ -86,13 +87,13 @@ void disable_nrst() {
     // start the option byte flash
     FLASH->CR |= FLASH_CR_OPTSTRT;
     // wait until flashing is done
-    ledseq_red.blink({});  // Default = 200ms ON, 200ms OFF
+    ledseq_red.blink({}); // Default = 200ms ON, 200ms OFF
     while ((FLASH->SR & FLASH_SR_BSY1) != 0) ledseq_red.loop();
     ledseq_red.off();
     ledseq_red.loop();
 
     // Waste some time (5s) as wear level flash protection if something fails
-    ledseq_green.blink({.on = 500, .off = 500, .limit_blink_cycles = 5, .fulfill = true});  // Default = 200ms ON, 200ms OFF
+    ledseq_green.blink({ .on = 500, .off = 500, .limit_blink_cycles = 5, .fulfill = true });
     while (ledseq_green.loop());
 
     // load the new value and do a system reset
