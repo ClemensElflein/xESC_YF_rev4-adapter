@@ -31,7 +31,7 @@
             ],
             "device": "STM32C011F6P6",
             //"showDevDebugOutput": "raw",
-            "runToEntryPoint": "main",
+            //"runToEntryPoint": "main",
             "configFiles": [
                 "modm/openocd.cfg",
             ],

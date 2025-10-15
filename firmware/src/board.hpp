@@ -135,8 +135,8 @@ namespace Board {
 #endif
 
 #ifdef PROTO_DEBUG
-    // Create an IODeviceWrapper around the Uart Peripheral we want to use
-    modm::IODeviceWrapper<proto_uart::Uart, modm::IOBuffer::BlockIfFull> LoggerDevice;
+    // Forward declaration - definition in board.cpp
+    extern modm::IODeviceWrapper<proto_uart::Uart, modm::IOBuffer::BlockIfFull> LoggerDevice;
 #endif
 
     inline void
@@ -178,11 +178,13 @@ namespace Board {
 } // namespace Board
 
 #ifdef PROTO_DEBUG
-// Set all four logger streams to use the UART
-modm::log::Logger modm::log::debug(Board::LoggerDevice);
-modm::log::Logger modm::log::info(Board::LoggerDevice);
-modm::log::Logger modm::log::warning(Board::LoggerDevice);
-modm::log::Logger modm::log::error(Board::LoggerDevice);
+// Forward declarations for logger streams (definitions in board.cpp)
+namespace modm::log {
+    extern Logger debug;
+    extern Logger info;
+    extern Logger warning;
+    extern Logger error;
+}
 #endif
 
 #endif // MODM_XESCYFR4_BOARD_HPP

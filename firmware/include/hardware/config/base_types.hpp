@@ -18,12 +18,23 @@ namespace hardware {
         using Red = RedGpio;
     };
 
+    // Template-based Host communication configuration
+    template<typename ShutdownGpio, typename UartTx, typename UartRx, typename UartHal>
+    struct HostConfig {
+        using Shutdown = ShutdownGpio;
+        using Tx = UartTx;
+        using Rx = UartRx;
+        using Uart = modm::platform::BufferedUart<UartHal, modm::platform::UartTxBuffer<32>, modm::platform::UartRxBuffer<32>>;
+    };
+
     // Template-based hardware configuration
-    template<typename LedConfigType>
+    template<typename LedConfigType, typename HostConfigType>
     struct HardwareConfig {
-        using LedConfig = LedConfigType;  // Type alias for template access
-        
+        using LedConfig = LedConfigType;    // Type alias for template access
+        using HostConfig = HostConfigType;  // Type alias for template access
+
         const VersionInfo& version;
         LedConfigType led;
+        HostConfigType host;
     };
 }

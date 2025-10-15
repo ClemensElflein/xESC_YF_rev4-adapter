@@ -3,8 +3,8 @@
 #define PROTO_DEBUG          // Enable for debug logging on proto UART2
 #define PROTO_DEBUG_BAUD 460800_Bd
 // #define PROTO_DEBUG_MOTOR    // Enable motor specific debugging messages
-// #define PROTO_DEBUG_HOST_RX  // Enable host RX debugging messages
-// #define PROTO_DEBUG_HOST_TX  // Enable host TX debugging messages
+#define PROTO_DEBUG_HOST_RX  // Enable host RX debugging messages
+#define PROTO_DEBUG_HOST_TX  // Enable host TX debugging messages
 // #define PROTO_DEBUG_ADC      // Enable ADC specific debugging messages
 
 #undef MODM_LOG_LEVEL

@@ -3,6 +3,7 @@
 #include "config/v1_0.hpp"
 #include "config/v2_0.hpp"
 #include "disable_nrst.hpp"
+#include "host_comm.hpp"
 
 namespace hardware {
 
@@ -12,11 +13,13 @@ namespace hardware {
      * This template class is instantiated with the specific hardware configuration detected at runtime,
      * providing compile-time optimized code for each hardware version.
      */
-    template<typename HardwareConfig>
+    template<const auto& Config>
     class HardwareController {
     public:
-        explicit HardwareController(const HardwareConfig& config)
-            : hw_config(config) {
+        // Public type alias so HostComm can access the config type
+        using HardwareConfig = std::remove_cvref_t<decltype(Config)>;
+
+        explicit HardwareController() : host_comm(*this) {
             // Initialize GPIO pins using the template types
             LedConfigType::Green::setOutput();
             LedConfigType::Red::setOutput();
@@ -45,18 +48,30 @@ namespace hardware {
             ::disable_nrst(ledseq_green, ledseq_red);
         }
 
-    private:
-        const HardwareConfig& hw_config;
+        /**
+         * @brief Jump to system bootloader
+         */
+        void jumpSystemBootloader();
 
+        /**
+         * @brief Get reference to host communication
+         */
+        auto& getHostComm() { return host_comm; }
+
+    private:
         // Extract LedConfig type from HardwareConfig 
         using LedConfigType = typename HardwareConfig::LedConfig;
 
         // Hardware-specific LED sequencers using the LED types from config
+        // Must be declared before host_comm since host_comm uses references to them
         LedSeq<typename LedConfigType::Green> ledseq_green;
         LedSeq<typename LedConfigType::Red> ledseq_red;
+
+        // Hardware-specific host communication (takes reference to *this for LED and config access)
+        HostComm<HardwareController> host_comm;
     };
 
-    // Type aliases for convenience using the complete HardwareConfig
-    using V1Controller = HardwareController<decltype(versions::v1_0)>;
-    using V2Controller = HardwareController<decltype(versions::v2_0)>;
+    // Type aliases for convenience - now using the config objects directly as template parameters
+    using V1Controller = HardwareController<versions::v1_0>;
+    using V2Controller = HardwareController<versions::v2_0>;
 }

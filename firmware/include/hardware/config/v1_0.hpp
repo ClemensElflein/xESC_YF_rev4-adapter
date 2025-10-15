@@ -10,8 +10,18 @@ namespace hardware::versions {
     using V1_0_LedConfig = LedConfig<V1_0_LedGreen, V1_0_LedRed>;
     constexpr V1_0_LedConfig v1_0_led{};
 
-    constexpr HardwareConfig<V1_0_LedConfig> v1_0{
+
+    using V1_0_HostConfig = HostConfig<
+        modm::platform::GpioInputA8,    // Shutdown
+        modm::platform::GpioOutputA9,   // Tx  
+        modm::platform::GpioInputA10,   // Rx
+        modm::platform::UsartHal1       // UART HAL
+    >;
+    constexpr V1_0_HostConfig v1_0_host{};
+
+    constexpr HardwareConfig<V1_0_LedConfig, V1_0_HostConfig> v1_0{
         .version = v1_0_version,
-        .led = v1_0_led
+        .led = v1_0_led,
+        .host = v1_0_host
     };
 }

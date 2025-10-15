@@ -81,14 +81,12 @@ void jump_system_bootloader(auto& ledseq_green, auto& ledseq_red) {
     }
 }
 
-// Global COBS communication variables - used by legacy functions before migration
-#define COBS_BUFFER_SIZE 100
-static uint8_t buffer_rx[COBS_BUFFER_SIZE];
-static unsigned int buffer_rx_idx = 0;
-static uint8_t buffer_tx[COBS_BUFFER_SIZE];
-COBS cobs;
+// ============================================================================
+// LEGACY CODE - Temporary compatibility layer for migration
+// TODO: Migrate update_faults(), set_motor_state(), update_status() to HardwareController
+// ============================================================================
 
-// Legacy LED interface - provides compatibility for existing functions
+// Legacy LED interface - provides compatibility for existing functions that still use LEDs
 struct DummyLed {
     void on() {}
     void off() {}
@@ -97,7 +95,6 @@ struct DummyLed {
 };
 static DummyLed ledseq_green;
 static DummyLed ledseq_red;
-#define LEDSEQ_ERROR_LL_COMM ledseq_red.blink({.on = 20, .off = 30, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = true})
 
 // Misc
 std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {}; // Definition of AdcSampler's private _data buffer (initialized with 0)
@@ -122,46 +119,14 @@ XescYFR4StatusPacket status = {};
 XescYFR4SettingsPacket settings = {};
 bool settings_valid = false;
 
+// ============================================================================
+// LEGACY CODE - Temporary stub for sendMessage (TODO: migrate to HostComm)
+// ============================================================================
 void sendMessage(void* message, size_t size) {
-    // Packages have to be at least 1 byte of type + 1 byte of data + 2 bytes of CRC
-    if (size < 4) {
-        LEDSEQ_ERROR_LL_COMM;
-        return;
-    }
-    uint8_t* data_pointer = (uint8_t*)message;
-
-    // Calc CRC
-    uint16_t crc = CRC::Calculate(data_pointer, size - 2, CRC::CRC_16_CCITTFALSE());
-    data_pointer[size - 1] = (crc >> 8) & 0xFF;
-    data_pointer[size - 2] = crc & 0xFF;
-
-#ifdef PROTO_DEBUG_HOST_TX
-    MODM_LOG_DEBUG << "before encoding " << size << "byte:" << modm::endl;
-    uint8_t* temp = data_pointer;
-    for (size_t i = 0; i < size; i++) {
-        MODM_LOG_DEBUG << *temp << " ";
-        temp++;
-    }
-    MODM_LOG_DEBUG << modm::endl;
-#endif
-
-    // Encode message
-    size_t encoded_size = cobs.encode((uint8_t*)message, size, buffer_tx);
-    buffer_tx[encoded_size] = 0;
-    encoded_size++;
-
-#ifdef PROTO_DEBUG_HOST_TX
-    MODM_LOG_DEBUG << "encoded size " << encoded_size << "byte:" << modm::endl;
-    for (size_t i = 0; i < encoded_size; i++) {
-        MODM_LOG_DEBUG << buffer_tx[i] << " ";
-    }
-    MODM_LOG_DEBUG << modm::endl;
-#endif
-
-    // write() byte as long as the TX buffer isn't full
-    for (size_t i = 0; i < encoded_size;)
-        if (host::Uart::write(buffer_tx[i]))
-            i++;
+    // TODO: Integrate with HardwareController's HostComm
+    // For now, this is a no-op stub to allow compilation
+    (void)message;
+    (void)size;
 }
 
 void update_faults() {
@@ -346,9 +311,12 @@ MODM_ISR(TIM14) {
     update_status();
 }
 
+// ============================================================================
+// LEGACY CODE - Now replaced by HostComm::processReceivedPacket()
+// ============================================================================
+#if 0
 /**
  * @brief buffer_rx has a complete COBS encoded packet (incl. COBS end marker)
- *
  */
 void PacketReceived() {
     static uint8_t pkt_buffer[COBS_BUFFER_SIZE]; // COBS decoded packet buffer
@@ -402,41 +370,9 @@ void PacketReceived() {
         break;
     }
 }
+#endif // Legacy PacketReceived
+// ============================================================================
 
-/**
- * @brief Handle data in LowLevel-UART RX buffer and wait (buffer) for COBS end marker
- */
-void handle_host_rx_buffer() {
-    uint8_t data;
-    while (host::Uart::read(data)) {
-        buffer_rx[buffer_rx_idx++] = data;
-        if (buffer_rx_idx >= COBS_BUFFER_SIZE) { // Buffer is full, but no COBS end marker. Reset
-            LEDSEQ_ERROR_LL_COMM;
-            buffer_rx_idx = 0;
-            return;
-        }
-
-        if (data == 0) { // COBS end marker
-#ifdef PROTO_DEBUG_HOST_RX
-            MODM_LOG_DEBUG << "buffer_rx[" << buffer_rx_idx << "]:";
-            for (unsigned int i = 0; i < buffer_rx_idx; ++i) {
-                MODM_LOG_DEBUG << " " << buffer_rx[i];
-            }
-            MODM_LOG_DEBUG << modm::endl
-                << modm::flush;
-#endif
-            PacketReceived();
-            buffer_rx_idx = 0;
-            return;
-        }
-
-        // Bootloader trigger string?
-        if (buffer_rx_idx == sizeof BOOTLOADER_TRIGGER_STR && strcmp((const char*)buffer_tx, BOOTLOADER_TRIGGER_STR)) {
-            // Legacy compatibility: use dummy LED sequencers for bootloader jump
-            ::jump_system_bootloader(ledseq_green, ledseq_red);
-        }
-    }
-}
 
 /**
  * @brief ISR execute when a Capture Compare interruption is triggered via motor::sa pin.
@@ -467,6 +403,7 @@ MODM_ISR(TIM1_CC) {
 }
 
 int main() {
+    // Initialize common hardware stuff
     Board::initialize();
 
     // Load hardware info from flash OTP area
@@ -487,15 +424,19 @@ int main() {
 #endif
 
     // Hardware-specific dispatch to template-optimized controller
+    // Config is now baked into the template parameter - no constructor arg needed!
     if (hardware::isValidFlashConfig(flashConfig) && flashConfig.version.major == 2) {
         // V2.0 Hardware detected
-        hardware::V2Controller controller(hardware::versions::v2_0);
+        hardware::V2Controller controller;
         controller.run();
     } else {
-        // V1.0 Hardware (default fallback)  
-        hardware::V1Controller controller(hardware::versions::v1_0);
-        controller.disableNrstPin(); // Check NRST pin. Will flash if wrong and reset
-        vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - safe to enable
+        // V1.0 Hardware (also default fallback if there's no hardware info in OTP area)  
+        hardware::V1Controller controller;
+        // Check NRST pin. Will flash if wrong and reset
+        controller.disableNrstPin();
+        // VM-Switch /FAULT signal (LowActive). Take attention that /FAULT doesn't get triggered before NRST check
+        //vm_switch::Fault::setInput(Gpio::InputType::PullUp);
+        vm_switch::DiagEnable::set(); // V1 hardware - safe to enable
         controller.run();
     }
 

@@ -43,4 +43,8 @@
     (((i) & 0x80ll) ? '1' : '0'), (((i) & 0x40ll) ? '1' : '0'), (((i) & 0x20ll) ? '1' : '0'), (((i) & 0x10ll) ? '1' : '0'), \
         (((i) & 0x08ll) ? '1' : '0'), (((i) & 0x04ll) ? '1' : '0'), (((i) & 0x02ll) ? '1' : '0'), (((i) & 0x01ll) ? '1' : '0')
 
+// Macro to print a byte as two hex digits (e.g., 0x0A -> "0a")
+// Usage: MODM_LOG_DEBUG << HEX_BYTE(byte_value);
+#define HEX_BYTE(b) modm::hex << ((uint8_t)(b)) << modm::ascii
+
 #endif  // _DEBUG_H_
