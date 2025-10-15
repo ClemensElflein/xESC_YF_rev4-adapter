@@ -20,7 +20,7 @@
 #include "COBS.h"
 #include "LedSeq.hpp"
 #include "config.h"
-#include "hardware/hardware_init.hpp"
+#include "hardware/config_manager.hpp"
 #include "hardware/hardware_controller.hpp"
 #ifdef CRC // FIXME remove modm/STM32 CRC or use it
 #undef CRC
