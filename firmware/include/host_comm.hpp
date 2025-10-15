@@ -55,15 +55,33 @@ public:
         }
         uint8_t* data_pointer = (uint8_t*)message;
 
+#ifdef PROTO_DEBUG_HOST_TX
+        MODM_LOG_DEBUG << "TX[" << size << " bytes] Raw:";
+        for (size_t i = 0; i < size - 2; ++i) MODM_LOG_DEBUG << " " << HEX_BYTE(data_pointer[i]);
+        MODM_LOG_DEBUG << modm::endl;
+#endif
+
         // Calc CRC
         uint16_t crc = CRC::Calculate(data_pointer, size - 2, CRC::CRC_16_CCITTFALSE());
         data_pointer[size - 1] = (crc >> 8) & 0xFF;
         data_pointer[size - 2] = crc & 0xFF;
 
+#ifdef PROTO_DEBUG_HOST_TX
+        MODM_LOG_DEBUG << "    [" << size << " bytes] With CRC:";
+        for (size_t i = 0; i < size; ++i) MODM_LOG_DEBUG << " " << HEX_BYTE(data_pointer[i]);
+        MODM_LOG_DEBUG << " (CRC: " << HEX_BYTE(crc >> 8) << HEX_BYTE(crc & 0xFF) << ")" << modm::endl;
+#endif
+
         // Encode message
         size_t encoded_size = cobs.encode((uint8_t*)message, size, buffer_tx);
         buffer_tx[encoded_size] = 0;
         encoded_size++;
+
+#ifdef PROTO_DEBUG_HOST_TX
+        MODM_LOG_DEBUG << "    [" << encoded_size << " bytes] COBS:";
+        for (size_t i = 0; i < encoded_size; ++i) MODM_LOG_DEBUG << " " << HEX_BYTE(buffer_tx[i]);
+        MODM_LOG_DEBUG << modm::endl << modm::flush;
+#endif
 
         // Write bytes to UART
         using HardwareConfig = typename HardwareController::HardwareConfig;
