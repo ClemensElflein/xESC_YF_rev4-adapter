@@ -231,6 +231,11 @@ private:
         }
         // TODO: Add callback mechanism or integrate with main application
         // For now this is a placeholder for the migration
+        // TODO:
+        //last_watchdog_millis = MILLIS;
+        //XescYFR4ControlPacket* packet = (XescYFR4ControlPacket*)pkt_buffer;
+        //duty_setpoint = packet->duty_cycle;
+        //set_motor_state();
     }
 
     /**
@@ -244,5 +249,9 @@ private:
         }
         // TODO: Add callback mechanism or integrate with main application
         // For now this is a placeholder for the migration
+        // TODO:
+        //XescYFR4SettingsPacket* packet = (XescYFR4SettingsPacket*)pkt_buffer;
+        //settings = *packet;
+        //settings_valid = true;
     }
 };

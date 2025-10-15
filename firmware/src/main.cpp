@@ -311,69 +311,6 @@ MODM_ISR(TIM14) {
     update_status();
 }
 
-// ============================================================================
-// LEGACY CODE - Now replaced by HostComm::processReceivedPacket()
-// ============================================================================
-#if 0
-/**
- * @brief buffer_rx has a complete COBS encoded packet (incl. COBS end marker)
- */
-void PacketReceived() {
-    static uint8_t pkt_buffer[COBS_BUFFER_SIZE]; // COBS decoded packet buffer
-
-    size_t pkt_size = cobs.decode(buffer_rx, buffer_rx_idx - 1, (uint8_t*)pkt_buffer);
-
-    // calculate the CRC only if we have at least three bytes (two CRC, one data)
-    if (pkt_size < 3) {
-        LEDSEQ_ERROR_LL_COMM;
-        return;
-    }
-
-    // Check CRC
-    uint16_t crc = CRC::Calculate(pkt_buffer, pkt_size - 2, CRC::CRC_16_CCITTFALSE());
-    if (pkt_buffer[pkt_size - 1] != ((crc >> 8) & 0xFF) ||
-        pkt_buffer[pkt_size - 2] != (crc & 0xFF)) {
-        LEDSEQ_ERROR_LL_COMM;
-        return;
-    }
-
-    switch (pkt_buffer[0]) {
-    case XESCYFR4_MSG_TYPE_CONTROL:
-    {
-        if (pkt_size != sizeof(struct XescYFR4ControlPacket)) {
-            LEDSEQ_ERROR_LL_COMM;
-            return;
-        }
-        // Got control packet
-        last_watchdog_millis = MILLIS;
-        XescYFR4ControlPacket* packet = (XescYFR4ControlPacket*)pkt_buffer;
-        duty_setpoint = packet->duty_cycle;
-        set_motor_state();
-    }
-    break;
-    case XESCYFR4_MSG_TYPE_SETTINGS:
-    {
-        if (pkt_size != sizeof(struct XescYFR4SettingsPacket)) {
-            settings_valid = false;
-            LEDSEQ_ERROR_LL_COMM;
-            return;
-        }
-        XescYFR4SettingsPacket* packet = (XescYFR4SettingsPacket*)pkt_buffer;
-        settings = *packet;
-        settings_valid = true;
-    }
-    break;
-
-    default:
-        // Wrong/unknown packet type
-        LEDSEQ_ERROR_LL_COMM;
-        break;
-    }
-}
-#endif // Legacy PacketReceived
-// ============================================================================
-
-
 /**
  * @brief ISR execute when a Capture Compare interruption is triggered via motor::sa pin.
  */
