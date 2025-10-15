@@ -17,18 +17,22 @@
 
 #include <modm/platform.hpp>
 
+#include <modm/platform.hpp>
+
 #include "COBS.h"
 #include "LedSeq.hpp"
+#include "board.hpp"
 #include "config.h"
-#include "hardware/config_manager.hpp"
-#include "hardware/hardware_controller.hpp"
+#include "hardware/hw_version.hpp"
 #ifdef CRC // FIXME remove modm/STM32 CRC or use it
 #undef CRC
 #endif
 #include "AdcSampler.hpp"
 #include "CRC.h"
+#include "disable_nrst.hpp"
+#include "jump_system_bootloader.hpp"
 #include "xesc_yfr4_datatypes.h"
-#include "board.hpp"  // Include last to avoid logger conflicts
+#include "debug.h"
 
 using namespace Board;
 using namespace std::chrono_literals;
@@ -36,65 +40,17 @@ using namespace std;
 
 #define MILLIS modm::Clock::now().time_since_epoch().count()
 
-// Implementation of jump_system_bootloader (defined in main.cpp to have access to board.hpp)
-void jump_system_bootloader(auto& ledseq_green, auto& ledseq_red) {
-    void (*SysMemBootJump)(void);
+// LED sequencer
+LedSeq<LedGreen> ledseq_green;
+LedSeq<LedRed> ledseq_red;
+#define LEDSEQ_ERROR_LL_COMM ledseq_red.blink({.on = 20, .off = 30, .limit_blink_cycles = 1, .post_pause = 0, .fulfill = true})
 
-    // Disable Timer & interrupts
-    Timer14::disableInterrupt(Timer14::Interrupt::Update);
-    Timer14::disable();
-    Timer1::disableInterrupt(Timer1::Interrupt::CaptureCompare4);
-    Timer1::disable();
-    AdcSampler::disable();
-
-    __disable_irq();    // Disable all interrupts
-    SysTick->CTRL = 0;  // Disable Systick timer
-    // HAL_RCC_DeInit();// Set the clock to the default state
-    Rcc::setHsiSysDivider(Rcc::HsiSysDivider::Div4);  // Default HsiSysDivider = boot frequency (12MHz)
-
-    // Clear Interrupt Enable Register & Interrupt Pending Register
-    for (size_t i = 0; i < sizeof(NVIC->ICER) / sizeof(NVIC->ICER[0]); i++) {
-        NVIC->ICER[i] = 0xFFFFFFFF;
-        NVIC->ICPR[i] = 0xFFFFFFFF;
-    }
-    __enable_irq();  // Re-enable all interrupts
-
-    // Set up the jump to boot loader address + 4
-    SysMemBootJump = (void (*)(void))(*((uint32_t*)((BOOTLOADER_ADDR + 4))));
-
-    // Set the main stack pointer to the boot loader stack
-    __set_MSP(*(uint32_t*)BOOTLOADER_ADDR);
-
-    // Call the function to jump to boot loader location
-    SysMemBootJump();
-
-    // Jump is done successfully, we should never reach here!
-    // Use the provided LED sequencers for indication
-    ledseq_green.on();
-    ledseq_red.off();
-    while (1) {
-        ledseq_green.blink({ .on = 100, .off = 100 });
-        ledseq_red.blink({ .on = 100, .off = 100 });
-        while (ledseq_green.loop() || ledseq_red.loop()) {
-            // Wait for blink cycles to complete
-        }
-    }
-}
-
-// ============================================================================
-// LEGACY CODE - Temporary compatibility layer for migration
-// TODO: Migrate update_faults(), set_motor_state(), update_status() to HardwareController
-// ============================================================================
-
-// Legacy LED interface - provides compatibility for existing functions that still use LEDs
-struct DummyLed {
-    void on() {}
-    void off() {}
-    void blink(const LedSeq<modm::platform::GpioUnused>::LedProps&) {}
-    bool loop() { return false; }
-};
-static DummyLed ledseq_green;
-static DummyLed ledseq_red;
+// Host comms (COBS)
+#define COBS_BUFFER_SIZE 100                // Should be at least size of biggest RX/TX message + some COBS overhead bytes
+static uint8_t buffer_rx[COBS_BUFFER_SIZE]; // Serial RX buffer for COBS encoded data up to COBS end marker
+static unsigned int buffer_rx_idx = 0;
+static uint8_t buffer_tx[COBS_BUFFER_SIZE]; // Serial TX buffer for COBS encoded messages
+COBS cobs;
 
 // Misc
 std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {}; // Definition of AdcSampler's private _data buffer (initialized with 0)
@@ -132,16 +88,10 @@ void sendMessage(void* message, size_t size) {
 void update_faults() {
     uint32_t faults = 0;
 
-    /*    // FAULT_WRONG_HW_VERSION - Check if wrong hardware version firmware is running
-    #ifdef HW_V1
-        if (!hw_version::IsV1()) {  // V1 firmware doesn't detected a flashed V1 HWInfo (or no HWInfo struct)
-            faults |= FAULT_WRONG_HW_VERSION;
-        }
-    #else  // HW_V2
-        if (!hw_version::IsV2()) {  // V2 firmware doesn't detected a flashed V2 HWinfo
-            faults |= FAULT_WRONG_HW_VERSION;
-        }
-    #endif */
+    // FAULT_WRONG_HW_VERSION - Check if wrong hardware version firmware is running
+    if (!hardware::checkFlashMatchesBinary()) {
+        faults |= FAULT_WRONG_HW_VERSION;
+    }
 
     // FAULT_UNINITIALIZED
     if (!settings_valid) {
@@ -312,6 +262,120 @@ MODM_ISR(TIM14) {
 }
 
 /**
+ * @brief buffer_rx has a complete COBS encoded packet (incl. COBS end marker)
+ *
+ */
+void PacketReceived() {
+    static uint8_t pkt_buffer[COBS_BUFFER_SIZE]; // COBS decoded packet buffer
+
+#ifdef PROTO_DEBUG_HOST_RX
+    MODM_LOG_DEBUG << "RX[" << buffer_rx_idx << " bytes] COBS:";
+    for (unsigned int i = 0; i < buffer_rx_idx; ++i) MODM_LOG_DEBUG << " " << HEX_BYTE(buffer_rx[i]);
+    MODM_LOG_DEBUG << modm::endl;
+#endif
+
+    size_t pkt_size = cobs.decode(buffer_rx, buffer_rx_idx - 1, (uint8_t*)pkt_buffer);
+
+#ifdef PROTO_DEBUG_HOST_RX
+    MODM_LOG_DEBUG << "    [" << pkt_size << " bytes] Decoded:";
+    for (size_t i = 0; i < pkt_size; ++i) MODM_LOG_DEBUG << " " << HEX_BYTE(pkt_buffer[i]);
+    MODM_LOG_DEBUG << modm::endl << modm::flush;
+#endif
+
+    // calculate the CRC only if we have at least three bytes (two CRC, one data)
+    if (pkt_size < 3) {
+#ifdef PROTO_DEBUG_HOST_RX
+        MODM_LOG_DEBUG << "    ERROR: Packet too short" << modm::endl << modm::flush;
+#endif
+        LEDSEQ_ERROR_LL_COMM;
+        return;
+    }
+
+    // Check CRC
+    uint16_t crc = CRC::Calculate(pkt_buffer, pkt_size - 2, CRC::CRC_16_CCITTFALSE());
+    if (pkt_buffer[pkt_size - 1] != ((crc >> 8) & 0xFF) ||
+        pkt_buffer[pkt_size - 2] != (crc & 0xFF)) {
+#ifdef PROTO_DEBUG_HOST_RX
+        MODM_LOG_DEBUG << "    ERROR: CRC mismatch (expected: "
+            << HEX_BYTE(crc >> 8) << HEX_BYTE(crc & 0xFF)
+            << ", got: " << HEX_BYTE(pkt_buffer[pkt_size - 2]) << HEX_BYTE(pkt_buffer[pkt_size - 1])
+            << ")" << modm::endl << modm::flush;
+#endif            
+        LEDSEQ_ERROR_LL_COMM;
+        return;
+    }
+
+    switch (pkt_buffer[0]) {
+    case XESCYFR4_MSG_TYPE_CONTROL:
+    {
+        if (pkt_size != sizeof(struct XescYFR4ControlPacket)) {
+            LEDSEQ_ERROR_LL_COMM;
+            return;
+        }
+#ifdef PROTO_DEBUG_HOST_RX
+        MODM_LOG_DEBUG << "    Type: CONTROL" << modm::endl << modm::flush;
+#endif
+        // Got control packet
+        last_watchdog_millis = MILLIS;
+        XescYFR4ControlPacket* packet = (XescYFR4ControlPacket*)pkt_buffer;
+        duty_setpoint = packet->duty_cycle;
+        set_motor_state();
+    }
+    break;
+    case XESCYFR4_MSG_TYPE_SETTINGS:
+    {
+        if (pkt_size != sizeof(struct XescYFR4SettingsPacket)) {
+            settings_valid = false;
+            LEDSEQ_ERROR_LL_COMM;
+            return;
+        }
+#ifdef PROTO_DEBUG_HOST_RX
+        MODM_LOG_DEBUG << "    Type: SETTINGS" << modm::endl << modm::flush;
+#endif
+        XescYFR4SettingsPacket* packet = (XescYFR4SettingsPacket*)pkt_buffer;
+        settings = *packet;
+        settings_valid = true;
+    }
+    break;
+
+    default:
+        // Wrong/unknown packet type
+#ifdef PROTO_DEBUG_HOST_RX
+        MODM_LOG_DEBUG << "    ERROR: Unknown packet type 0x" << HEX_BYTE(pkt_buffer[0])
+            << modm::endl << modm::flush;
+#endif
+        LEDSEQ_ERROR_LL_COMM;
+        break;
+    }
+}
+
+/**
+ * @brief Handle data in LowLevel-UART RX buffer and wait (buffer) for COBS end marker
+ */
+void handle_host_rx_buffer() {
+    uint8_t data;
+    while (host::Uart::read(data)) {
+        buffer_rx[buffer_rx_idx++] = data;
+        if (buffer_rx_idx >= COBS_BUFFER_SIZE) { // Buffer is full, but no COBS end marker. Reset
+            LEDSEQ_ERROR_LL_COMM;
+            buffer_rx_idx = 0;
+            return;
+        }
+
+        if (data == 0) { // COBS end marker
+            PacketReceived();
+            buffer_rx_idx = 0;
+            return;
+        }
+
+        // Bootloader trigger string?
+        if (buffer_rx_idx == sizeof BOOTLOADER_TRIGGER_STR && strcmp((const char*)buffer_tx, BOOTLOADER_TRIGGER_STR)) {
+            //jump_system_bootloader();
+        }
+    }
+}
+
+/**
  * @brief ISR execute when a Capture Compare interruption is triggered via motor::sa pin.
  */
 MODM_ISR(TIM1_CC) {
@@ -343,48 +407,20 @@ int main() {
     // Initialize common hardware stuff
     Board::initialize();
 
-    // Load hardware info from flash OTP area
-    const auto& flashConfig = hardware::loadFromFlash();
-
-    // Validate magic string and CRC
 #ifdef PROTO_DEBUG
-    if (hardware::isValidFlashConfig(flashConfig)) {
-        MODM_LOG_INFO << "Flash OTP config valid: v"
-            << static_cast<int>(flashConfig.version.major) << "."
-            << static_cast<int>(flashConfig.version.minor)
-            << " (CRC: 0x" << modm::hex << flashConfig.crc16 << modm::ascii << ")"
-            << modm::endl;
-    } else {
-        // Handle invalid flash data (non-programmed flash (all 0xFF) and corrupted data)
-        MODM_LOG_INFO << "Flash config invalid (magic/CRC), assuming v1.0 hardware" << modm::endl;
-    }
+    // Print hardware version info
+    MODM_LOG_INFO << "xESC_YF_rev4 - ";
+    hardware::printVersionInfo(modm::log::info);
+    MODM_LOG_INFO << modm::endl;
 #endif
 
-    // Hardware-specific dispatch to template-optimized controller
-    // Config is now baked into the template parameter - no constructor arg needed!
-    if (hardware::isValidFlashConfig(flashConfig) && flashConfig.version.major == 2) {
-        // V2.0 Hardware detected
-        hardware::V2Controller controller;
-        controller.run();
-    } else {
-        // V1.0 Hardware (also default fallback if there's no hardware info in OTP area)  
-        hardware::V1Controller controller;
-        // Check NRST pin. Will flash if wrong and reset
-        controller.disableNrstPin();
-        // VM-Switch /FAULT signal (LowActive). Take attention that /FAULT doesn't get triggered before NRST check
-        //vm_switch::Fault::setInput(Gpio::InputType::PullUp);
-        vm_switch::DiagEnable::set(); // V1 hardware - safe to enable
-        controller.run();
-    }
-
-    /*#ifdef HW_V1
-        if (hw_version::IsV1()) {
-        }
-    #else
-        if (!hw_version::IsV1()) {
-            vm_switch::DiagEnable::set(); // V2+ hardware - always safe to enable diagnostics
-        }
-    #endif*/
+    // Hardware-specific initialization
+#ifdef HW_V1
+    disable_nrst(); // Check NRST pin. Will flash if wrong and reset
+    vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - safe to enable
+#else  // HW_V2
+    vm_switch::DiagEnable::set(); // V2+ hardware - always safe to enable diagnostics
+#endif
 
     AdcSampler::init(); // Init & run AdcSampler
 
@@ -394,8 +430,9 @@ int main() {
     status.fw_version_minor = 2;
     status.direction = 0; // Our motor has only one direction
 
+#ifdef FALSE
     // SA (Hall) input - Capture/Compare timer
-    /*Timer1::connect<motor::SATimChan>();
+    Timer1::connect<motor::SATimChan>();
     Timer1::enable();
     Timer1::setMode(Timer1::Mode::UpCounter);
     Timer1::setPrescaler(SA_TIMER_PRESCALER);
@@ -416,5 +453,16 @@ int main() {
     Timer14::enableInterrupt(Timer14::Interrupt::Update);
     Timer14::enableInterruptVector(true, 26);
     Timer14::applyAndReset();
-    Timer14::start();*/
+    Timer14::start();
+#endif
+
+    // LED blink code "Boot up successful"
+    ledseq_green.blink({ .limit_blink_cycles = 3, .fulfill = true }); // Default = 200ms ON, 200ms OFF
+    ledseq_red.blink({ .limit_blink_cycles = 3, .fulfill = true });   // Default = 200ms ON, 200ms OFF
+
+    while (true) {
+        handle_host_rx_buffer();
+        ledseq_green.loop();
+        ledseq_red.loop();
+    }
 }
