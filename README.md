@@ -263,8 +263,10 @@ Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yar
 
 <table>
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
+  <tr><td></td><td>0.5Hz slow blink</td><td>Wrong firmware version for this hardware version. Reflash correct firmware version</td></tr>
   <tr><td></td><td>5 * blink</td><td>NRST Pin not yet disabled. <b>Keep board powered</b> and watch for further LED codes</td></tr>
-  <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>  <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
+  <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>
+  <tr><td colspan="2" align="center">3 * quick blink</td><td>'Power up' successful</td></tr>
   <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
   <tr><td>0.5Hz flash<br>(short flash every 2 seconds)</td><td></td><td>Shutdown (Sleep) triggered by OpenMower Pico FW</td></tr>
   <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>  

@@ -3,7 +3,7 @@
   disable_nrst.hpp
 
   Copyright (c) 2021, olikraus@gmail.com
-  Modified 2024, joerg@ebeling.ws
+  Modified 2024, 2025, joerg@ebeling.ws
 
   All rights reserved.
 
@@ -52,51 +52,50 @@
 #pragma once
 
 #include <modm/platform.hpp>
-#include "LedSeq.hpp"
 
-/**
- * @brief Hardware-agnostic NRST disable function using existing LED sequencers
- * @param ledseq_green Reference to existing green LED sequencer
- * @param ledseq_red Reference to existing red LED sequencer
- */
-void disable_nrst(auto& ledseq_green, auto& ledseq_red) {
-    /* check for the NRST GPIO mode */
-    if ((FLASH->OPTR & FLASH_OPTR_NRST_MODE_1) != 0 && (FLASH->OPTR & FLASH_OPTR_NRST_MODE_0) == 0) {
-        /* NRST already configured as GPIO..., do nothing */
-        return;
-    }
+using namespace Board;
 
-    // Waste some time (5s) as wear level flash protection if something fails
-    ledseq_red.blink({ .on = 500, .off = 500, .limit_blink_cycles = 5, .fulfill = true });
-    while (ledseq_red.loop());
+extern LedController status_led;
+extern LedController error_led;
 
-    /* Clear the LOCK bit in FLASH->CR (precondition for option byte flash) */
-    FLASH->KEYR = 0x45670123;
-    FLASH->KEYR = 0xCDEF89AB;
-    /* Clear the OPTLOCK bit in FLASH->CR */
-    FLASH->OPTKEYR = 0x08192A3B;
-    FLASH->OPTKEYR = 0x4C5D6E7F;
+void disable_nrst() {
+   /* check for the NRST GPIO mode */
+   if ((FLASH->OPTR & FLASH_OPTR_NRST_MODE_1) != 0 && (FLASH->OPTR & FLASH_OPTR_NRST_MODE_0) == 0) {
+      /* NRST already configured as GPIO..., do nothing */
+      return;
+   }
 
-    /* enable GPIO mode at the reset pin */
-    FLASH->OPTR |= FLASH_OPTR_NRST_MODE_1;
-    FLASH->OPTR &= ~FLASH_OPTR_NRST_MODE_0;
+   // Waste some time (5s) as wear level flash protection if something fails
+   error_led.Blink(5, true);
+   while (error_led.Update());
 
-    /* check if there is any flash operation */
-    while ((FLASH->SR & FLASH_SR_BSY1) != 0);
+   /* Clear the LOCK bit in FLASH->CR (precondition for option byte flash) */
+   FLASH->KEYR = 0x45670123;
+   FLASH->KEYR = 0xCDEF89AB;
+   /* Clear the OPTLOCK bit in FLASH->CR */
+   FLASH->OPTKEYR = 0x08192A3B;
+   FLASH->OPTKEYR = 0x4C5D6E7F;
 
-    // start the option byte flash
-    FLASH->CR |= FLASH_CR_OPTSTRT;
-    // wait until flashing is done
-    ledseq_red.blink({}); // Default = 200ms ON, 200ms OFF
-    while ((FLASH->SR & FLASH_SR_BSY1) != 0) ledseq_red.loop();
-    ledseq_red.off();
-    ledseq_red.loop();
+   /* enable GPIO mode at the reset pin */
+   FLASH->OPTR |= FLASH_OPTR_NRST_MODE_1;
+   FLASH->OPTR &= ~FLASH_OPTR_NRST_MODE_0;
 
-    // Waste some time (5s) as wear level flash protection if something fails
-    ledseq_green.blink({ .on = 500, .off = 500, .limit_blink_cycles = 5, .fulfill = true });
-    while (ledseq_green.loop());
+   /* check if there is any flash operation */
+   while ((FLASH->SR & FLASH_SR_BSY1) != 0);
 
-    // load the new value and do a system reset
-    // this will behave like a goto to the begin of this main procedure
-    FLASH->CR |= FLASH_CR_OBL_LAUNCH;
+   // start the option byte flash
+   FLASH->CR |= FLASH_CR_OPTSTRT;
+   // wait until flashing is done
+   error_led.QuickBlink();
+   while ((FLASH->SR & FLASH_SR_BSY1) != 0) error_led.Update();
+   error_led.Off();
+   error_led.Update();
+
+   // Waste some time (5s) for wear level flash protection if something fails
+   status_led.Blink(5, true);
+   while (status_led.Update());
+
+   // load the new value and do a system reset
+   // this will behave like a goto to the begin of this main procedure
+   FLASH->CR |= FLASH_CR_OBL_LAUNCH;
 }

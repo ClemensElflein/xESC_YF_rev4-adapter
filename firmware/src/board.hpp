@@ -63,12 +63,17 @@ namespace Board {
     };
 
     using LedGreen = GpioC15;
+
+    // Hardware version specific LEDs (always define both for cross-version error indication)
+    using LedRed_v1 = GpioC14;
+    using LedRed_v2 = GpioB6;
+
+    // Alias for the correct red LED based on compiled hardware version
 #ifdef HW_V1
-    using LedRed = GpioC14;
+    using LedRed = LedRed_v1;
 #else
-    using LedRed = GpioB6;
+    using LedRed = LedRed_v2;
 #endif
-    using Leds = SoftwareGpioPort<LedGreen, LedRed>;
     /// @}
 
     namespace host {
@@ -83,7 +88,7 @@ namespace Board {
         using Shutdown = GpioInputC14;
 #endif
         /// @}
-} // namespace host
+    } // namespace host
 
     namespace proto_uart {
         /// @ingroup modm_board_xescyfr4
@@ -152,8 +157,6 @@ namespace Board {
         SysTickTimer::initialize<SystemClock>();
 
         // Init GPIOs
-        Leds::setOutput(modm::Gpio::Low);
-
         vm_switch::In::setOutput(Gpio::OutputType::PushPull);
         vm_switch::In::reset(); // VM-Switch, VMC = off
         vm_switch::DiagEnable::setOutput(Gpio::OutputType::PushPull);
@@ -185,7 +188,7 @@ namespace Board {
     }
     /// @}
 
-    } // namespace Board
+} // namespace Board
 
 #ifdef PROTO_DEBUG
 // Forward declarations for logger streams (definitions in board.cpp)

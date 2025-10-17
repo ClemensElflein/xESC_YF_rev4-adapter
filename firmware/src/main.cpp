@@ -21,6 +21,7 @@
 
 #include "COBS.h"
 #include "LedSeq.hpp"
+#include "led_controller.hpp"
 #include "board.hpp"
 #include "config.h"
 #include "hardware/hw_version.hpp"
@@ -40,6 +41,23 @@ using namespace std;
 
 #define MILLIS modm::Clock::now().time_since_epoch().count()
 
+bool wrong_hw = false; // If this FW doesn't fit to the detected HW
+
+// Create concrete GPIO objects for all possible LED GPIOs
+ModmGpio<LedGreen> led_green_gpio;
+ModmGpio<LedRed_v1> led_red_v1_gpio;
+ModmGpio<LedRed_v2> led_red_v2_gpio;
+
+// Create LED Controller instances for this FW.
+// GPIO might get changed in main() if a different HW get detected
+LedController status_led(&led_green_gpio); // Green status LED
+#ifdef HW_V1
+LedController error_led(&led_red_v1_gpio); // Red error LED
+#else
+LedController error_led(&led_red_v2_gpio); // Red error LED
+#endif
+
+// TODO: Remove once migrated to new LED Controller
 // LED sequencer
 LedSeq<LedGreen> ledseq_green;
 LedSeq<LedRed> ledseq_red;
@@ -414,13 +432,40 @@ int main() {
     MODM_LOG_INFO << modm::endl;
 #endif
 
-    // Hardware-specific initialization
+    // Check for hardware mismatch and initialize cross-version LEDs if needed
+    // SAFETY: We only initialize the GPIO for the OTHER hardware version
+    // to avoid touching unknown GPIOs that might control motors or other dangerous hardware!
+    if (!hardware::checkFlashMatchesBinary()) {
+        wrong_hw = true;
 #ifdef HW_V1
-    disable_nrst(); // Check NRST pin. Will flash if wrong and reset
-    vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - safe to enable
-#else  // HW_V2
-    vm_switch::DiagEnable::set(); // V2+ hardware - always safe to enable diagnostics
+        // V1 binary on V2 hardware -> Change V2 LED GPIO
+        led_red_v2_gpio.SetOutput(Gpio::OutputType::PushPull);
+        error_led.SetGpio(&led_red_v2_gpio);
+        MODM_LOG_ERROR << "CRITICAL: V1 firmware on V2 hardware detected!" << modm::endl;
+#else
+        // V2 binary on V1 hardware -> Change V1 LED GPIO
+        led_red_v1_gpio.SetOutput(Gpio::OutputType::PushPull);
+        error_led.SetGpio(&led_red_v1_gpio);
+        MODM_LOG_ERROR << "CRITICAL: V2 firmware on V1 hardware detected!" << modm::endl;
 #endif
+    } else {
+#ifdef HW_V1
+        led_red_v1_gpio.SetOutput(Gpio::OutputType::PushPull);
+#else
+        led_red_v2_gpio.SetOutput(Gpio::OutputType::PushPull);
+#endif
+    }
+    led_green_gpio.SetOutput(Gpio::OutputType::PushPull);
+
+    // Hardware-specific initialization
+    if (!wrong_hw) {
+#ifdef HW_V1
+        disable_nrst(); // Check NRST pin. Will flash if wrong and reset
+        vm_switch::DiagEnable::set(); // V1 firmware on V1 hardware - only safe after disable_nrst()
+#else  // HW_V2
+        vm_switch::DiagEnable::set(); // V2+ hardware - always safe to enable diagnostics
+#endif
+    }
 
     AdcSampler::init(); // Init & run AdcSampler
 
@@ -456,13 +501,23 @@ int main() {
     Timer14::start();
 #endif
 
-    // LED blink code "Boot up successful"
-    ledseq_green.blink({ .limit_blink_cycles = 3, .fulfill = true }); // Default = 200ms ON, 200ms OFF
-    ledseq_red.blink({ .limit_blink_cycles = 3, .fulfill = true });   // Default = 200ms ON, 200ms OFF
+    // LED blink code "Boot up successful" (3 * quick blink)
+    status_led.QuickBlink(3, true);
+    if (wrong_hw)
+        error_led.Blink({ .on_time_ms = 1000, .off_time_ms = 1000 }); // Slow blink (0.5Hz)
+    else
+        error_led.QuickBlink(3, true);
 
     while (true) {
         handle_host_rx_buffer();
-        ledseq_green.loop();
-        ledseq_red.loop();
+        //ledseq_green.loop();
+        status_led.Update();
+        error_led.Update();
+        //ledseq_red.loop();
+        // Cross-version LED sequencers (only active if wrong hardware detected)
+        if (wrong_hw) {
+            //ledseq_wrong_hw_v1.loop();
+            //ledseq_wrong_hw_v2.loop();
+        }
     }
 }
