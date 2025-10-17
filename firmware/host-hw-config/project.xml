@@ -6,13 +6,15 @@
   <options>
     <option name="modm:build:cmake:include_cmakelists">True</option>
     <option name="modm:build:project.name">HW_Config_Generator</option>
-    <option name="modm:build:build.path">../build/hw_config_generator</option>
+    <option name="modm:build:build.path">../build/hw-config</option>
     <option name="modm:target">hosted-linux</option>
   </options>
 
   <collectors>
     <!-- Add hardware config include path -->
     <collect name="modm:build:path.include">../include</collect>
+        <!-- Hardware variant specific C/C++ defines -->
+    <collect name="modm:build:cppdefines">HW_BRAND=1</collect>
   </collectors>
 
   <modules>

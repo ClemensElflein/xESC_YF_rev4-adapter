@@ -9,7 +9,7 @@
 #include <cstring>
 
 // Include the flash config
-#include "../include/hardware/flash_config.hpp"
+#include "../include/hardware/hw_version.hpp"
 
 // Hardware version configurations
 struct HardwareVersionConfig {
@@ -24,25 +24,6 @@ const HardwareVersionConfig hw_configs[] = {
     {2, 0, "v2.0"}
 };
 
-// CRC16-CCITT-FALSE calculation (same as in firmware)
-uint16_t CalculateCrc16CcittFalse(const uint8_t* data, uint16_t length) {
-    uint16_t crc = 0xFFFF;
-
-    for (uint16_t i = 0; i < length; i++) {
-        crc ^= (static_cast<uint16_t>(data[i]) << 8);
-
-        for (uint8_t bit = 0; bit < 8; bit++) {
-            if (crc & 0x8000) {
-                crc = (crc << 1) ^ 0x1021;
-            } else {
-                crc <<= 1;
-            }
-        }
-    }
-
-    return crc;
-}
-
 bool GenerateConfigBinary(const HardwareVersionConfig& hw_config, const std::string& output_file) {
     // Create the flash config structure
     hardware::FlashHardwareConfig flash_config;
@@ -55,7 +36,7 @@ bool GenerateConfigBinary(const HardwareVersionConfig& hw_config, const std::str
     flash_config.version.minor = hw_config.minor;
 
     // Calculate CRC over everything except the CRC field itself
-    uint16_t crc = CalculateCrc16CcittFalse(
+    uint16_t crc = hardware::calculateCrc16CcittFalse(
         reinterpret_cast<const uint8_t*>(&flash_config),
         sizeof(hardware::FlashHardwareConfig) - sizeof(flash_config.crc16)
     );
@@ -81,7 +62,7 @@ bool GenerateConfigBinary(const HardwareVersionConfig& hw_config, const std::str
 
 int main(int argc, char* argv[]) {
     std::cout << "=== Hardware Config Generator ===" << std::endl;
-    std::cout << "Generating hardware config binaries from constexpr configurations..." << std::endl;
+    std::cout << "Generating hardware config binaries..." << std::endl;
 
     // Use output directory from command line argument if provided
     std::string output_dir = ".";
@@ -102,8 +83,8 @@ int main(int argc, char* argv[]) {
     }
 
     if (success) {
-        std::cout << "All hardware config binaries generated successfully!" << std::endl;
-        std::cout << "These can now be flashed with WRP protection using the TCL branding scripts." << std::endl;
+        std::cout << "All hardware config binaries generated successfully." << std::endl;
+        std::cout << "These can now be flashed to OTP flash address 0x1FFF7000." << std::endl;
         return 0;
     } else {
         std::cerr << "Failed to generate some hardware config binaries!" << std::endl;

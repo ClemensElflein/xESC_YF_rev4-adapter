@@ -113,6 +113,8 @@ namespace hardware {
             return true;  // V1 firmware on hardware without OTP -> assume V1 hardware (backward compat)
 #elif defined(HW_V2)
             return false; // V2 firmware on hardware without OTP -> likely wrong hardware
+#elif defined(HW_BRAND)
+            return true;
 #else
 #error "Either HW_V1 or HW_V2 must be defined"
 #endif
@@ -123,6 +125,8 @@ namespace hardware {
         return flash_config.isVersion(1, 0);
 #elif defined(HW_V2)
         return flash_config.isVersion(2, 0);
+#elif defined(HW_BRAND)
+        return true;
 #else
 #error "Either HW_V1 or HW_V2 must be defined"
 #endif
