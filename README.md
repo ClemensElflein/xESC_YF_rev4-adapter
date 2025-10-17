@@ -88,8 +88,7 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ### Hardware Version Branding
 
-Starting with hardware version 2.0, the adapter maintains a **unified firmware build** for different hardware versions. 
-For this the MCU needs to be branded by flashing a hardware config into the OTP area.
+Starting with hardware version 2.0, the adapters MCU needs to be branded by flashing a hardware config into the OTP area.
 
 #### Branding Process:
 
@@ -117,7 +116,7 @@ For this the MCU needs to be branded by flashing a hardware config into the OTP 
 The branding process writes a small hardware information structure to the first two OTP dwords. **Take attention** that OTP flash can be written only once!
 
 **Important Notes:**
-- Branding only needs to be done **once per device** as well as it can be done only once
+- Branding only needs as well as "can" be done only **once per device**
 - The branding **truly survives firmware updates** (because OTP flash can be written only once)
 - Hardware Version 1.x boards don't need branding. Non-branded devices get assumed to be v1.0 hardware
 <br>
@@ -289,11 +288,14 @@ Once done:
   `git clone --recurse-submodules https://github.com/ClemensElflein/xESC_YF_rev4-adapter.git`
 2. Change into the project source directory:<br>
   `cd xESC_YF_rev4-adapter/firmware/src`
-3. Build the modm library files:<br>
-  `lbuild build`
+3. Build the modm library files for a specific hardware version:<br>
+   ```bash
+   # This is for v2.0 hardware building
+   lbuild -c project.hw_v2.xml build
+   ```
 4. Compile the firmware binary:<br>
-  `scons build profile=<release|debug>`
-1. Flash firmware:<br>
+  `scons [profile=<release|debug>] [build]`
+5. Flash firmware:<br>
   For this, a specific [xPack OpenOCD](https://xpack-dev-tools.github.io/openocd-xpack/) version is required. Either install your own one, or use the one within the package folder by:<br>
   `export MODM_OPENOCD_BINARY=../packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd`<br>
   Afterwards flash the firmware via:<br>
@@ -328,6 +330,7 @@ Once done:
 See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 ## History
 
