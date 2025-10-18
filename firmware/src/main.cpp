@@ -88,8 +88,7 @@ void UpdateFaults() {
 
   // FAULT_OVERTEMP_PCB.
   const auto& settings = host_comm::GetSettings();
-  if (status.temperature_pcb >
-      static_cast<double>(std::min(HW_LIMIT_PCB_TEMP, settings.max_pcb_temp))) {
+  if (status.temperature_pcb > static_cast<double>(std::min(HW_LIMIT_PCB_TEMP, settings.max_pcb_temp))) {
     faults |= FAULT_OVERTEMP_PCB;
   }
 
@@ -182,27 +181,18 @@ void UpdateStatus() {
   status.tacho_absolute = motor_control::GetSaTacho();
   status.rpm = motor_control::GetRpm();
   status.temperature_pcb = AdcSampler::getInternalTemp();
-  status.current_input = AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) /
-                         (CUR_SENSE_GAIN * R_SHUNT);
+  status.current_input = AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT);
 
-#if (defined PROTO_DEBUG_COMMS || defined PROTO_DEBUG_MOTOR || \
-     defined PROTO_DEBUG_ADC)
+#if (defined PROTO_DEBUG_COMMS || defined PROTO_DEBUG_MOTOR || defined PROTO_DEBUG_ADC)
   MODM_LOG_INFO << "TX status.fault_code=" << status.fault_code;
 #ifdef PROTO_DEBUG_MOTOR
-  MODM_LOG_INFO << ", tacho=" << status.tacho
-                << ", ticks=" << motor_control::GetSaTicks()
-                << ", rpm=" << status.rpm;
+  MODM_LOG_INFO << ", tacho=" << status.tacho << ", ticks=" << motor_control::GetSaTicks() << ", rpm=" << status.rpm;
 #endif
 #ifdef PROTO_DEBUG_ADC
-  MODM_LOG_DEBUG << " VRef=" << AdcSampler::getInternalVref_u() << "mV, "
-                 << AdcSampler::getInternalVref_f() << "mV"
+  MODM_LOG_DEBUG << " VRef=" << AdcSampler::getInternalVref_u() << "mV, " << AdcSampler::getInternalVref_f() << "mV"
                  << " Temp=" << AdcSampler::getInternalTemp()
-                 << " CurrentSense="
-                 << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense)
-                 << "V, "
-                 << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) /
-                        (CUR_SENSE_GAIN * R_SHUNT)
-                 << "A";
+                 << " CurrentSense=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) << "V, "
+                 << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT) << "A";
 #endif
   MODM_LOG_INFO << modm::endl << modm::flush;
 #endif
@@ -261,14 +251,12 @@ int main() {
     // V1 binary on V2 hardware -> Initialize V2 LED GPIO.
     led_red_v2_gpio.SetOutput(Gpio::OutputType::PushPull);
     error_led.SetGpio(&led_red_v2_gpio);
-    MODM_LOG_ERROR << "CRITICAL: V1 firmware on V2 hardware detected!"
-                   << modm::endl;
+    MODM_LOG_ERROR << "CRITICAL: V1 firmware on V2 hardware detected!" << modm::endl;
 #else
     // V2 binary on V1 hardware -> Initialize V1 LED GPIO.
     led_red_v1_gpio.SetOutput(Gpio::OutputType::PushPull);
     error_led.SetGpio(&led_red_v1_gpio);
-    MODM_LOG_ERROR << "CRITICAL: V2 firmware on V1 hardware detected!"
-                   << modm::endl;
+    MODM_LOG_ERROR << "CRITICAL: V2 firmware on V1 hardware detected!" << modm::endl;
 #endif
   } else {
 #ifdef HW_V1
@@ -294,13 +282,12 @@ int main() {
     motor::RS::set();  // Motor !RS (Rapid/Rotor Start)
 
 #ifdef HW_V1
-    disable_nrst();  // Check NRST pin. Will flash if wrong and reset.
-    vm_switch::DiagEnable::set();  // V1 - safe only after disable_nrst()
-    vm_switch::Fault::setInput(
-        Gpio::InputType::PullUp);  // VM-Switch !FAULT signal (LowActive). Take
-                                   // attention to FAULT doesn't get triggered
-                                   // before NRST check
-#else                              // HW_V2
+    disable_nrst();                                       // Check NRST pin. Will flash if wrong and reset.
+    vm_switch::DiagEnable::set();                         // V1 - safe only after disable_nrst()
+    vm_switch::Fault::setInput(Gpio::InputType::PullUp);  // VM-Switch !FAULT signal (LowActive). Take
+                                                          // attention to FAULT doesn't get triggered
+                                                          // before NRST check
+#else                                                     // HW_V2
     vm_switch::DiagEnable::set();  // V2+ - always safe to enable diagnostics
 #endif
   }
@@ -316,23 +303,20 @@ int main() {
   status.fw_version_minor = 3;
   status.direction = 0;  // Motor has only one direction
 
-#ifdef FALSE
   // SA (Hall) input - Capture/Compare timer.
   Timer1::connect<motor::SATimChan>();
   Timer1::enable();
   Timer1::setMode(Timer1::Mode::UpCounter);
   Timer1::setPrescaler(SA_TIMER_PRESCALER);
   Timer1::setOverflow(0xFFFF);
-  Timer1::configureInputChannel<motor::SATimChan>(
-      Timer1::InputCaptureMapping::InputOwn,
-      Timer1::InputCapturePrescaler::Div1,  // Must match
-                                            // SA_TIMER_INPUT_PRESCALER
-      Timer1::InputCapturePolarity::Rising, SA_TIMER_MIN_TICKS);
+  Timer1::configureInputChannel<motor::SATimChan>(Timer1::InputCaptureMapping::InputOwn,
+                                                  Timer1::InputCapturePrescaler::Div1,  // Must match
+                                                                                        // SA_TIMER_INPUT_PRESCALER
+                                                  Timer1::InputCapturePolarity::Rising, SA_TIMER_MIN_TICKS);
   Timer1::enableInterrupt(motor::SACaptureInterrupt);
   Timer1::enableInterruptVector(motor::SACaptureInterrupt, true, 21);
   Timer1::applyAndReset();
   Timer1::start();
-#endif
 
   // Status Timer.
   Timer14::enable();
@@ -346,8 +330,7 @@ int main() {
   // Boot-up success indication (3 quick blinks).
   status_led.QuickBlink(3, true);
   if (wrong_hw) {
-    error_led.Blink(
-        {.on_time_ms = 1000, .off_time_ms = 1000});  // Slow blink (0.5Hz)
+    error_led.Blink({.on_time_ms = 1000, .off_time_ms = 1000});  // Slow blink (0.5Hz)
   } else {
     error_led.QuickBlink(3, true);
   }
