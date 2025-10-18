@@ -164,13 +164,13 @@ namespace host_comm {
                 SignalCommError();
                 return;
             }
-#ifdef PROTO_DEBUG_HOST_RX
-            MODM_LOG_DEBUG << "    Type: CONTROL" << modm::endl << modm::flush;
-#endif
             // Got control packet.
             last_watchdog_millis_ = MILLIS;
             XescYFR4ControlPacket* packet =
                 reinterpret_cast<XescYFR4ControlPacket*>(pkt_buffer);
+#ifdef PROTO_DEBUG_HOST_RX
+            MODM_LOG_DEBUG << "    Type: CONTROL, duty_cycle: " << packet->duty_cycle << modm::endl << modm::flush;
+#endif
             duty_setpoint_ = packet->duty_cycle;
             break;
         }
