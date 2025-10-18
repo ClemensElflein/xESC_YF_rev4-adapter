@@ -52,12 +52,11 @@ jobs:
           scons build bin profile=release
       - name: Copy Artifacts
         run: |
-          mkdir -p artifacts/HW_v1
-          mkdir -p artifacts/HW_v2
-          cp firmware/build/v1/scons-release/xESC_YF_rev4_Firmware.elf ./artifacts/HW_v1/firmware_xesc_yf_rev4_v1.elf
-          cp firmware/build/v1/scons-release/xESC_YF_rev4_Firmware.bin ./artifacts/HW_v1/firmware_xesc_yf_rev4_v1.bin
-          cp firmware/build/v2/scons-release/xESC_YF_rev4_Firmware.elf ./artifacts/HW_v2/firmware_xesc_yf_rev4_v2.elf
-          cp firmware/build/v2/scons-release/xESC_YF_rev4_Firmware.bin ./artifacts/HW_v2/firmware_xesc_yf_rev4_v2.bin
+          mkdir -p artifacts
+          cp firmware/build/v1/scons-release/xESC_YF_rev4_Firmware.elf ./artifacts/firmware_xesc_yf_rev4_v1.elf
+          cp firmware/build/v1/scons-release/xESC_YF_rev4_Firmware.bin ./artifacts/firmware_xesc_yf_rev4_v1.bin
+          cp firmware/build/v2/scons-release/xESC_YF_rev4_Firmware.elf ./artifacts/firmware_xesc_yf_rev4_v2.elf
+          cp firmware/build/v2/scons-release/xESC_YF_rev4_Firmware.bin ./artifacts/firmware_xesc_yf_rev4_v2.bin
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
