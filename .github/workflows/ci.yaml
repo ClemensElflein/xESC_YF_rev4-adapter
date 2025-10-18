@@ -45,7 +45,6 @@ jobs:
         run: |
           cd firmware/src
           lbuild clean
-          scons -c
       - name: Build HW V2 firmware
         run: |
           cd firmware/src
