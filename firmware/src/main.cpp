@@ -155,30 +155,37 @@ void UpdateStatus() {
 
     // Enable/disable VMC based on faults and shutdown state.
     if (!(status.fault_code & FAULT_OPEN_LOAD) && !is_shutdown) {
-        vm_switch::In::set();
-        Timer1::enableInterrupt(Timer1::Interrupt::CaptureCompare4);
+        // FIXME once migrated: vm_switch::In::set();
+        // FIXME once migrated: Timer1::enableInterrupt(Timer1::Interrupt::CaptureCompare4);
     } else if (motor_control::UpdateMotorStoppedState(status.tacho)) {
-        Timer1::disableInterrupt(Timer1::Interrupt::CaptureCompare4);
-        vm_switch::In::reset();
+        // FIXME once migrated: Timer1::disableInterrupt(Timer1::Interrupt::CaptureCompare4);
+        // FIXME once migrated: vm_switch::In::reset();
     }
 
     // Update motor state based on setpoint and faults.
-    motor_control::SetDutySetpoint(host_comm::GetDutySetpoint());
-    motor_control::UpdateMotorState(has_faults, is_shutdown);
+    // FIXME once migrated: motor_control::SetDutySetpoint(host_comm::GetDutySetpoint());
+    // FIXME once migrated: motor_control::UpdateMotorState(has_faults, is_shutdown);
 
     // Handle motor stopped detection.
     if (motor_control::GetDuty() == 0.0f) {
-        motor_control::UpdateMotorStoppedState(status.tacho);
+        // FIXME once migrated: motor_control::UpdateMotorStoppedState(status.tacho);
     } else {
-        motor_control::ResetMotorStoppedCycles();
+        // FIXME once migrated: motor_control::ResetMotorStoppedCycles();
     }
 
-#ifdef PROTO_DEBUG
-    MODM_LOG_INFO << "now=" << MILLIS << "ms status.fault_code=" << status.fault_code;
+    // Update status packet.
+    status.duty_cycle = motor_control::GetDuty();
+    status.tacho = motor_control::GetSaTacho();
+    status.tacho_absolute = motor_control::GetSaTacho();
+    status.rpm = motor_control::GetRpm();
+    status.temperature_pcb = AdcSampler::getInternalTemp();
+    status.current_input =
+        AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT);
+
+#if (defined PROTO_DEBUG_COMMS || defined PROTO_DEBUG_MOTOR || defined PROTO_DEBUG_ADC)
+    MODM_LOG_INFO << "TX status.fault_code=" << status.fault_code;
 #ifdef PROTO_DEBUG_MOTOR
-    MODM_LOG_DEBUG << " sa_tacho=" << motor_control::GetSaTacho()
-        << " sa_ticks=" << motor_control::GetSaTicks()
-        << " rpm=" << motor_control::GetRpm();
+    MODM_LOG_INFO << ", tacho=" << status.tacho << ", ticks=" << motor_control::GetSaTicks() << ", rpm=" << status.rpm;
 #endif
 #ifdef PROTO_DEBUG_ADC
     MODM_LOG_DEBUG << " VRef=" << AdcSampler::getInternalVref_u() << "mV, "
@@ -192,15 +199,6 @@ void UpdateStatus() {
 #endif
     MODM_LOG_INFO << modm::endl << modm::flush;
 #endif
-
-    // Update status packet.
-    status.duty_cycle = motor_control::GetDuty();
-    status.tacho = motor_control::GetSaTacho();
-    status.tacho_absolute = motor_control::GetSaTacho();
-    status.rpm = motor_control::GetRpm();
-    status.temperature_pcb = AdcSampler::getInternalTemp();
-    status.current_input =
-        AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT);
 
     host_comm::SendMessage(&status, sizeof(status));
 }
@@ -308,6 +306,7 @@ int main() {
     Timer1::enableInterruptVector(motor::SACaptureInterrupt, true, 21);
     Timer1::applyAndReset();
     Timer1::start();
+#endif
 
     // Status Timer.
     Timer14::enable();
@@ -317,7 +316,6 @@ int main() {
     Timer14::enableInterruptVector(true, 26);
     Timer14::applyAndReset();
     Timer14::start();
-#endif
 
     // Boot-up success indication (3 quick blinks).
     status_led.QuickBlink(3, true);

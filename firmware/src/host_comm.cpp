@@ -134,8 +134,8 @@ namespace host_comm {
 
         // Check minimum packet size (1 type + 1 data + 2 CRC).
         if (pkt_size < 3) {
-#ifdef PROTO_DEBUG_HOST_RX
-            MODM_LOG_DEBUG << "    ERROR: Packet too short" << modm::endl << modm::flush;
+#ifdef PROTO_DEBUG
+            MODM_LOG_WARNING << "WARN: RX Packet too short" << modm::endl << modm::flush;
 #endif
             SignalCommError();
             return;
@@ -146,8 +146,8 @@ namespace host_comm {
 
         if (pkt_buffer[pkt_size - 1] != ((crc >> 8) & 0xFF) ||
             pkt_buffer[pkt_size - 2] != (crc & 0xFF)) {
-#ifdef PROTO_DEBUG_HOST_RX
-            MODM_LOG_DEBUG << "    ERROR: CRC mismatch (expected: " << HEX_BYTE(crc >> 8)
+#ifdef PROTO_DEBUG
+            MODM_LOG_WARNING << "WARN: RX CRC mismatch (expected: " << HEX_BYTE(crc >> 8)
                 << HEX_BYTE(crc & 0xFF) << ", got: "
                 << HEX_BYTE(pkt_buffer[pkt_size - 2])
                 << HEX_BYTE(pkt_buffer[pkt_size - 1]) << ")" << modm::endl
@@ -168,8 +168,8 @@ namespace host_comm {
             last_watchdog_millis_ = MILLIS;
             XescYFR4ControlPacket* packet =
                 reinterpret_cast<XescYFR4ControlPacket*>(pkt_buffer);
-#ifdef PROTO_DEBUG_HOST_RX
-            MODM_LOG_DEBUG << "    Type: CONTROL, duty_cycle: " << packet->duty_cycle << modm::endl << modm::flush;
+#ifdef PROTO_DEBUG_COMMS
+            MODM_LOG_INFO << "RX CONTROL: duty_cycle: " << packet->duty_cycle << modm::endl << modm::flush;
 #endif
             duty_setpoint_ = packet->duty_cycle;
             break;
@@ -180,8 +180,8 @@ namespace host_comm {
                 SignalCommError();
                 return;
             }
-#ifdef PROTO_DEBUG_HOST_RX
-            MODM_LOG_DEBUG << "    Type: SETTINGS" << modm::endl << modm::flush;
+#ifdef PROTO_DEBUG_COMMS
+            MODM_LOG_INFO << "RX SETTINGS" << modm::endl << modm::flush;
 #endif
             XescYFR4SettingsPacket* packet =
                 reinterpret_cast<XescYFR4SettingsPacket*>(pkt_buffer);
@@ -191,8 +191,8 @@ namespace host_comm {
         }
         default:
             // Wrong/unknown packet type.
-#ifdef PROTO_DEBUG_HOST_RX
-            MODM_LOG_DEBUG << "    ERROR: Unknown packet type 0x"
+#ifdef PROTO_DEBUG
+            MODM_LOG_WARNING << "WARN: RX Unknown packet type 0x"
                 << HEX_BYTE(pkt_buffer[0]) << modm::endl << modm::flush;
 #endif
             SignalCommError();
