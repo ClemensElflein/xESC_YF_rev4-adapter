@@ -25,7 +25,6 @@
 #include "config.h"
 #include "debug.h"
 #include "disable_nrst.hpp"
-#include "fault_management.hpp"
 #include "hardware/hw_version.hpp"
 #include "host_comm.hpp"
 #include "jump_system_bootloader.hpp"
@@ -60,37 +59,87 @@ LedController error_led(&led_red_v2_gpio);
 // Status and settings packets.
 XescYFR4StatusPacket status = {};
 
-// Forward declarations.
-void UpdateStatus();
-
 /**
- * @brief Status Timer ISR - called every STATUS_CYCLE ms.
+ * @brief Update fault detection and LED indicators.
  */
-MODM_ISR(TIM14) {
-    Timer14::acknowledgeInterruptFlags(Timer14::InterruptFlag::Update);
-    UpdateStatus();
-}
+void UpdateFaults() {
+    uint32_t faults = 0;
+    bool is_shutdown = host::Shutdown::read();
 
-/**
- * @brief SA (Hall sensor) Capture/Compare ISR.
- */
-MODM_ISR(TIM1_CC) {
-    static uint16_t last_cc_value = 0;
-    uint16_t temp_cc_value = Timer1::getCompareValue<motor::SATimChan>();
-    uint32_t temp_ticks;
-
-    Timer1::acknowledgeInterruptFlags(motor::SACaptureFlag);
-    motor_control::UpdateSaTacho();
-
-    if (Timer1::getInterruptFlags() & Timer1::InterruptFlag::Update) {
-        Timer1::acknowledgeInterruptFlags(Timer1::InterruptFlag::Update);
-        temp_ticks = temp_cc_value + (0xffff - last_cc_value);
-    } else {
-        temp_ticks = temp_cc_value - last_cc_value;
+    // FAULT_WRONG_HW_VERSION - Check if wrong hardware version firmware is running.
+    if (wrong_hw) {
+        faults |= FAULT_WRONG_HW_VERSION;
     }
 
-    last_cc_value = temp_cc_value;
-    motor_control::UpdateSaTicks(temp_ticks);
+    // FAULT_UNINITIALIZED.
+    if (!host_comm::AreSettingsValid()) {
+        faults |= FAULT_UNINITIALIZED;
+    }
+
+    // FAULT_WATCHDOG.
+    if (MILLIS - host_comm::GetLastWatchdogMillis() > WATCHDOG_TIMEOUT_MILLIS) {
+        faults |= FAULT_WATCHDOG;
+    }
+
+    // FAULT_OVERCURRENT.
+    if (status.current_input > static_cast<double>(HW_LIMIT_CURRENT)) {
+        faults |= FAULT_OVERCURRENT;
+    }
+
+    // FAULT_OVERTEMP_PCB.
+    const auto& settings = host_comm::GetSettings();
+    if (status.temperature_pcb >
+        static_cast<double>(std::min(HW_LIMIT_PCB_TEMP, settings.max_pcb_temp))) {
+        faults |= FAULT_OVERTEMP_PCB;
+    }
+
+#ifdef HW_V1
+    // VMS FAULTs (V1 hardware only).
+    if (!vm_switch::Fault::read()) {
+        if (vm_switch::In::isSet()) {
+            // VM-Switch is "on"
+            // Disable VM-Switch diagnostics when switched on.
+            // TODO: Review if this is correct behavior.
+        } else if (!is_shutdown) {
+            faults |= FAULT_OPEN_LOAD;
+        }
+    }
+#endif
+
+    // Update fault code and LED indicators.
+    if (faults) {
+        status.fault_code = faults;
+
+        // Update LED indicators based on fault priority.
+        if (faults & FAULT_UNINITIALIZED) {
+            status_led.Blink();  // 1Hz blink
+        } else {
+            status_led.Off();
+        }
+
+        if (faults & FAULT_WRONG_HW_VERSION) {
+            error_led.On();  // Steady on (clear indication)
+        } else if (faults & FAULT_OPEN_LOAD) {
+            error_led.Blink(125U, 125U, 0);  // Quick blink (4Hz)
+        } else if (faults & (FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT)) {
+            error_led.Blink(250U, 250U, 0);  // Fast blink (2Hz)
+        } else if (faults & FAULT_WATCHDOG) {
+            error_led.Blink(0, false);  // 1Hz blink
+        }
+    } else {
+        // No faults - update status LED.
+        if (is_shutdown) {
+            status_led.Blink(100U, 1800U, 1);  // Short pulse
+        } else {
+            status_led.On();
+        }
+
+        // Reset fault indication if cleared.
+        if (status.fault_code != 0) {
+            error_led.Off();
+            status.fault_code = 0;
+        }
+    }
 }
 
 /**
@@ -100,10 +149,7 @@ void UpdateStatus() {
     status.seq++;
 
     // Update fault detection and LED status.
-    fault_management::UpdateFaults(status, host_comm::GetSettings(),
-        host_comm::AreSettingsValid(),
-        host_comm::GetLastWatchdogMillis(),
-        host::Shutdown::read());
+    UpdateFaults();
 
     bool has_faults = (status.fault_code != 0);
     bool is_shutdown = host::Shutdown::read();
@@ -160,6 +206,37 @@ void UpdateStatus() {
     host_comm::SendMessage(&status, sizeof(status));
 }
 
+/**
+ * @brief Status Timer ISR - called every STATUS_CYCLE ms.
+ */
+MODM_ISR(TIM14) {
+    Timer14::acknowledgeInterruptFlags(Timer14::InterruptFlag::Update);
+    UpdateStatus();
+}
+
+/**
+ * @brief SA (Hall sensor) Capture/Compare ISR.
+ */
+MODM_ISR(TIM1_CC) {
+    static uint16_t last_cc_value = 0;
+    uint16_t temp_cc_value = Timer1::getCompareValue<motor::SATimChan>();
+    uint32_t temp_ticks;
+
+    Timer1::acknowledgeInterruptFlags(motor::SACaptureFlag);
+    motor_control::UpdateSaTacho();
+
+    if (Timer1::getInterruptFlags() & Timer1::InterruptFlag::Update) {
+        Timer1::acknowledgeInterruptFlags(Timer1::InterruptFlag::Update);
+        temp_ticks = temp_cc_value + (0xffff - last_cc_value);
+    } else {
+        temp_ticks = temp_cc_value - last_cc_value;
+    }
+
+    last_cc_value = temp_cc_value;
+    motor_control::UpdateSaTicks(temp_ticks);
+}
+
+
 int main() {
     // Initialize common hardware.
     Board::initialize();
@@ -199,24 +276,22 @@ int main() {
     // Hardware-specific initialization.
     if (!wrong_hw) {
 #ifdef HW_V1
-        disable_nrst();              // Check NRST pin. Will flash if wrong and reset.
+        disable_nrst();                // Check NRST pin. Will flash if wrong and reset.
         vm_switch::DiagEnable::set();  // V1 - safe only after disable_nrst()
 #else  // HW_V2
         vm_switch::DiagEnable::set();  // V2+ - always safe to enable diagnostics
 #endif
     }
 
-    // Initialize subsystems.
+    // Initialize subsystems
     AdcSampler::init();
     motor_control::Init();
     host_comm::Init();
-    fault_management::Init();
-    fault_management::SetLedControllers(&status_led, &error_led);
 
     // Prepare status message.
     status.message_type = XESCYFR4_MSG_TYPE_STATUS;
     status.fw_version_major = 0;
-    status.fw_version_minor = 2;
+    status.fw_version_minor = 3;
     status.direction = 0;  // Motor has only one direction
 
 #ifdef FALSE

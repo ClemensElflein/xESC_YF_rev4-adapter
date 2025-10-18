@@ -34,7 +34,7 @@ namespace Board {
     using namespace modm::literals;
 
     struct SystemClock {
-        static constexpr uint32_t Frequency = 48_MHz; // 48MHz generated from internal RC
+        static constexpr uint32_t Frequency = 48_MHz;  // 48MHz generated from internal RC
         static constexpr uint32_t Ahb = Frequency;
         static constexpr uint32_t Apb = Frequency;
 
@@ -52,12 +52,12 @@ namespace Board {
         static constexpr uint32_t Usart2 = Ahb;
 
         static bool inline enable() {
-            Rcc::enableInternalClock();                      // 48MHz generated from internal RC
-            Rcc::setHsiSysDivider(Rcc::HsiSysDivider::Div1); // = 48MHz HSISYS
+            Rcc::enableInternalClock();                       // 48MHz generated from internal RC
+            Rcc::setHsiSysDivider(Rcc::HsiSysDivider::Div1);  // = 48MHz HSISYS
             Rcc::setFlashLatency<Frequency>();
-            Rcc::setAhbPrescaler(Rcc::AhbPrescaler::Div1); // = 48MHz HCLK
-            Rcc::setApbPrescaler(Rcc::ApbPrescaler::Div1); // = 48MHz PCLK/APB Timer Clocks
-            Rcc::updateCoreFrequency<Frequency>();         // update frequencies for busy-wait delay functions
+            Rcc::setAhbPrescaler(Rcc::AhbPrescaler::Div1);  // = 48MHz HCLK
+            Rcc::setApbPrescaler(Rcc::ApbPrescaler::Div1);  // = 48MHz PCLK/APB Timer Clocks
+            Rcc::updateCoreFrequency<Frequency>();          // update frequencies for busy-wait delay functions
             return true;
         }
     };
