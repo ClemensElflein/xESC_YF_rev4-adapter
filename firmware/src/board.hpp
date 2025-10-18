@@ -156,21 +156,6 @@ namespace Board {
         SystemClock::enable();
         SysTickTimer::initialize<SystemClock>();
 
-        // Init GPIOs
-        vm_switch::In::setOutput(Gpio::OutputType::PushPull);
-        vm_switch::In::reset(); // VM-Switch, VMC = off
-        vm_switch::DiagEnable::setOutput(Gpio::OutputType::PushPull);
-        vm_switch::DiagEnable::reset(); // VM-Switch diagnostics disable because Fault input get shared with NRST!!
-#ifdef HW_V1
-        vm_switch::Fault::setInput(Gpio::InputType::PullUp); // VM-Switch !FAULT signal (LowActive). Take attention to FAULT doesn't get triggered before NRST check
-#endif
-
-        motor::SA::setInput(Gpio::InputType::Floating); // Motor SA (Hall)
-        motor::Brk::setOutput(Gpio::OutputType::PushPull);
-        motor::Brk::reset(); // Motor BRK
-        motor::RS::setOutput(Gpio::OutputType::PushPull);
-        motor::RS::set(); // Motor !RS (Rapid/Rotor Start)
-
         // Remap and init host uart
         GpioA9::remap();  // Remap A9 -> A11
         GpioA10::remap(); // Remap A10 -> A12
