@@ -27,7 +27,6 @@
 #include "disable_nrst.hpp"
 #include "hardware/hw_version.hpp"
 #include "host_comm.hpp"
-#include "jump_system_bootloader.hpp"
 #include "led_controller.hpp"
 #include "motor_control.hpp"
 #include "xesc_yfr4_datatypes.h"

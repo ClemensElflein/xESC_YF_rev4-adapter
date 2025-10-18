@@ -21,9 +21,13 @@
 #include "AdcSampler.hpp"
 #include "board.hpp"
 #include "config.h"
+#include "led_controller.hpp"
 
 using namespace Board;
 using namespace std::chrono_literals;
+
+extern LedController status_led;
+extern LedController error_led;
 
 void jump_system_bootloader() {
     void (*SysMemBootJump)(void);
@@ -57,10 +61,18 @@ void jump_system_bootloader() {
     SysMemBootJump();
 
     // Jump is done successfully, we should never reach here!
-    //LedGreen::set();
-    //LedRed::reset();
+    status_led.On();
+    error_led.Off();
+    bool toggle = false;
     while (1) {
-        //Leds::toggle();
+        toggle = !toggle;
+        if (toggle) {
+            status_led.On();
+            error_led.Off();
+        } else {
+            status_led.Off();
+            error_led.On();
+        }
         modm::delay(100ms);
     }
 }

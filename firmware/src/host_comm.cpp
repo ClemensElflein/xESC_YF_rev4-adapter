@@ -22,6 +22,7 @@
 #include "config.h"
 #include "debug.h"
 #include "led_controller.hpp"
+#include "jump_system_bootloader.hpp"
 #include <modm/platform.hpp>
 #ifdef CRC  // FIXME remove modm/STM32 CRC or use it
 #undef CRC
@@ -220,7 +221,7 @@ namespace host_comm {
             // Check for bootloader trigger string.
             if (rx_buffer_idx_ == sizeof(BOOTLOADER_TRIGGER_STR) &&
                 strcmp(reinterpret_cast<const char*>(rx_buffer_), BOOTLOADER_TRIGGER_STR) == 0) {
-                // jump_system_bootloader();
+                jump_system_bootloader();
             }
         }
     }
