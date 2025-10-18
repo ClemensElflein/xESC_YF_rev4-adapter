@@ -36,29 +36,29 @@ jobs:
       - name: Update lbuild
         run: |
           pip3 install --upgrade --upgrade-strategy=eager modm
-      - name: Run HW v1 lbuild
+      - name: Build HW V1 firmware
         run: |
           cd firmware/src
-          lbuild -c project.hw_v1.xml build
-      - name: Compile HW v1 firmware
+          lbuild -c hw-v1.xml build
+          scons build bin profile=release
+      - name: Clean between builds
         run: |
           cd firmware/src
-          scons build bin
-      - name: Run HW v2 lbuild
+          lbuild clean
+          scons -c
+      - name: Build HW V2 firmware
         run: |
           cd firmware/src
-          lbuild -c project.hw_v2.xml build
-      - name: Compile HW v2 firmware
-        run: |
-          cd firmware/src
-          scons build bin
+          lbuild -c hw-v2.xml build
+          scons build bin profile=release
       - name: Copy Artifacts
         run: |
-          mkdir artifacts/
-          cp firmware/build/v1/scons-release/xESC_YF_rev4_v1-Firmware.elf ./artifacts/firmware_xesc_yf_rev4_v1.elf
-          cp firmware/build/v1/scons-release/xESC_YF_rev4_v1-Firmware.bin ./artifacts/firmware_xesc_yf_rev4_v1.bin
-          cp firmware/build/v2/scons-release/xESC_YF_rev4_v2-Firmware.elf ./artifacts/firmware_xesc_yf_rev4_v2.elf
-          cp firmware/build/v2/scons-release/xESC_YF_rev4_v2-Firmware.bin ./artifacts/firmware_xesc_yf_rev4_v2.bin
+          mkdir -p artifacts/HW_v1
+          mkdir -p artifacts/HW_v2
+          cp firmware/build/v1/scons-release/xESC_YF_rev4_Firmware.elf ./artifacts/HW_v1/firmware_xesc_yf_rev4_v1.elf
+          cp firmware/build/v1/scons-release/xESC_YF_rev4_Firmware.bin ./artifacts/HW_v1/firmware_xesc_yf_rev4_v1.bin
+          cp firmware/build/v2/scons-release/xESC_YF_rev4_Firmware.elf ./artifacts/HW_v2/firmware_xesc_yf_rev4_v2.elf
+          cp firmware/build/v2/scons-release/xESC_YF_rev4_Firmware.bin ./artifacts/HW_v2/firmware_xesc_yf_rev4_v2.bin
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:

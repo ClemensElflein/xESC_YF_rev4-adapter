@@ -52,6 +52,7 @@
 #pragma once
 
 #include <modm/platform.hpp>
+#include "led_controller.hpp"
 
 using namespace Board;
 

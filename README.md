@@ -293,7 +293,7 @@ Once done:
 3. Build the modm library files for a specific hardware version:<br>
    ```bash
    # This is for v2.0 hardware building
-   lbuild -c project.hw_v2.xml build
+   lbuild -c hw-v2.xml build
    ```
 4. Compile the firmware binary:<br>
   `scons [profile=<release|debug>] [build]`

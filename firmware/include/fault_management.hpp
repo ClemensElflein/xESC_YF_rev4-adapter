@@ -19,33 +19,28 @@
 #pragma once
 
 #include <cstdint>
-#include <cstddef>
 #include "xesc_yfr4_datatypes.h"
+#include "led_controller.hpp"
 
-namespace host_comm {
+namespace fault_management {
 
-    // Initialize host communication.
+    // Initialize fault management.
     void Init();
 
-    // Process incoming UART data (call from main loop).
-    void ProcessUartData();
+    // Update fault detection and LED status.
+    // Should be called regularly (e.g., in status update cycle).
+    void UpdateFaults(XescYFR4StatusPacket& status,
+        const XescYFR4SettingsPacket& settings,
+        bool settings_valid,
+        uint32_t last_watchdog_millis,
+        bool is_shutdown);
 
-    // Send a message via COBS encoding.
-    void SendMessage(void* message, size_t size);
+    // Get current fault code.
+    uint32_t GetFaultCode();
 
-    // Get last watchdog timestamp.
-    uint32_t GetLastWatchdogMillis();
+    // Get time of last fault.
+    uint32_t GetLastFaultMillis();
 
-    // Update last watchdog timestamp.
-    void UpdateWatchdog();
-
-    // Check if settings are valid.
-    bool AreSettingsValid();
-
-    // Get current settings.
-    const XescYFR4SettingsPacket& GetSettings();
-
-    // Get current duty setpoint (from last control packet).
-    float GetDutySetpoint();
-
-}  // namespace host_comm
+    // Set LED controllers for status indication.
+    void SetLedControllers(LedController* status_led, LedController* error_led);
+}  // namespace fault_management
