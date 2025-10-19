@@ -181,7 +181,7 @@ void UpdateStatus() {
   status.tacho_absolute = motor_control::GetSaTacho();
   status.rpm = motor_control::GetRpm();
   status.temperature_pcb = AdcSampler::getInternalTemp();
-  status.current_input = AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT);
+  status.current_input = Board::CalculateCurrent(AdcSampler::getVoltage(AdcSampler::Sensors::CurSense));
 
 #if (defined PROTO_DEBUG_COMMS || defined PROTO_DEBUG_MOTOR || defined PROTO_DEBUG_ADC)
   MODM_LOG_INFO << "TX status.fault_code=" << status.fault_code;
@@ -189,10 +189,11 @@ void UpdateStatus() {
   MODM_LOG_INFO << ", tacho=" << status.tacho << ", ticks=" << motor_control::GetSaTicks() << ", rpm=" << status.rpm;
 #endif
 #ifdef PROTO_DEBUG_ADC
+
   MODM_LOG_DEBUG << " VRef=" << AdcSampler::getInternalVref_u() << "mV, " << AdcSampler::getInternalVref_f() << "mV"
                  << " Temp=" << AdcSampler::getInternalTemp()
                  << " CurrentSense=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) << "V, "
-                 << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) / (CUR_SENSE_GAIN * R_SHUNT) << "A";
+                 << status.current_input << "A";
 #endif
   MODM_LOG_INFO << modm::endl << modm::flush;
 #endif

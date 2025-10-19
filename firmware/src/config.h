@@ -29,9 +29,6 @@
 // ADC
 #define ADC_RESOLUTION Resolution::Bits12
 #define ADC_NUM_CODES 4096U
-#define CUR_SENSE_GAIN 40.0f
-#define CUR_SENSE_2_GAIN 20.0f
-#define R_SHUNT 0.075f  // Shunt resistor
 
 // Hardware limits before going into fault
 #define HW_LIMIT_PCB_TEMP 80.0f
