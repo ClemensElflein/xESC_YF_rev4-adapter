@@ -143,8 +143,9 @@ using RS = GpioOutputA8;  // Motor !RS (Rapid/Rotor Start) (LowActive)
 // HW_V1: INA139NA current sense amplifier constants
 // Current calculation: I = V_adc / (CurSenseGain * RShunt)
 namespace hw_v1 {
-static constexpr float CurSenseGain = 40.0f;  // Gain resistor: 40kΩ
-static constexpr float RShunt = 0.075f;       // Shunt resistor: 0.075Ω
+static constexpr float CurSenseGain = 40.0f;             // Gain resistor: 40kΩ
+static constexpr float RShunt = 0.075f;                  // Shunt resistor: 0.075Ω
+static constexpr float Divisor = CurSenseGain * RShunt;  // Pre-computed: 3.0
 }  // namespace hw_v1
 
 // HW_V2: TPS1H100B integrated current sense with current mirror
@@ -154,8 +155,9 @@ static constexpr float RShunt = 0.075f;       // Shunt resistor: 0.075Ω
 // R_CS = 1kΩ (external sense resistor to GND)
 // Current calculation: I_out = V_CS × K / R_CS = V_CS × 500 / 1000 = V_CS × 0.5
 namespace hw_v2 {
-static constexpr float K = 500.0f;     // Current sense ratio (Version B)
-static constexpr float RCS = 1000.0f;  // Sense resistor to GND: 1kΩ
+static constexpr float K = 500.0f;           // Current sense ratio (Version B)
+static constexpr float RCS = 1000.0f;        // Sense resistor to GND: 1kΩ
+static constexpr float K_div_RCS = K / RCS;  // Pre-computed: 0.5
 }  // namespace hw_v2
 
 #ifdef HW_V1
@@ -176,12 +178,12 @@ using CurSenseAdc = CurSense::In3;  // ADC signal type for connect<>
 inline float CalculateCurrent(float voltage_adc) {
 #ifdef HW_V1
   // HW_V1: INA139NA current sense amplifier
-  // I = V_adc / (Gain × R_shunt)
-  return voltage_adc / (hw_v1::CurSenseGain * hw_v1::RShunt);
+  // I = V_adc / (Gain × R_shunt) = V_adc / 3.0
+  return voltage_adc / hw_v1::Divisor;
 #else
   // HW_V2: TPS1H100B with current mirror
-  // I_out = (V_CS × K) / R_CS = V_CS × 500 / 1000 = V_CS × 0.5
-  return voltage_adc * hw_v2::K / hw_v2::RCS;
+  // I_out = V_CS × (K / R_CS) = V_CS × 0.5
+  return voltage_adc * hw_v2::K_div_RCS;
 #endif
 }
 
