@@ -46,19 +46,27 @@ class AdcSampler : public modm::platform::Adc1 {
   /**
    * @brief Initialize, connect, configure and start free running ADC1
    *
+   * Target: ~10Hz update rate with best possible accuracy
+   * - Sample Time: 160.5 cycles (maximum for STM32C011)
+   * - Oversampling: 128x with /8 shift → 14-bit effective resolution
+   * - ADC Clock: 750 kHz (optimal for accuracy without FPU overhead)
+   *
+   * Update rate calculation:
+   * 3 channels × (160.5 + 12.5) cycles × 128 oversamples / 750 kHz ≈ 88ms → ~11Hz
    */
   static void init() {
 #ifdef PROTO_DEBUG_ADC
     MODM_LOG_INFO << "AdcSampler::init" << modm::endl << modm::flush;
 #endif
-    // Target frequency consideration:
-    // Let's get: 4 Channels * 160.5 sampling rate * 32 Oversamples every about 20ms (50Hz) = 1.03 MHz
-    initialize<Board::SystemClock, ClockMode::Asynchronous, 750_kHz>();  // Frequency is slower but more accurate
-    connect<Board::CurSenseAdc>();  // Hardware version independent (defined in board.hpp)
-    setSampleTime(SampleTime::Cycles160_5);
+    // Initialize ADC with optimal accuracy settings for non-FPU MCU
+    initialize<Board::SystemClock, ClockMode::Asynchronous, 750_kHz>();
+    connect<Board::CurSenseAdc>();           // Hardware version independent (defined in board.hpp)
+    setSampleTime(SampleTime::Cycles160_5);  // Maximum sample time for best accuracy
     setResolution(ADC_RESOLUTION);
     setRightAdjustResult();
-    enableOversampling(OversampleRatio::x32, OversampleShift::Div32);
+    // 128x oversampling with /8 shift → 14-bit effective (2 extra bits)
+    // Better SNR than 32x, still acceptable speed for 10Hz target
+    enableOversampling(OversampleRatio::x128, OversampleShift::Div8);
     setChannels(sequence);
     enableInterruptVector(15);
     enableInterrupt(Interrupt::EndOfConversion);
