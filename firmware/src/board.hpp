@@ -137,56 +137,40 @@ using RS = GpioOutputA8;  // Motor !RS (Rapid/Rotor Start) (LowActive)
 /// @}
 }  // namespace motor
 
+namespace adc {
 /// @ingroup modm_board_xescyfr4
 /// @{
 
+#ifdef HW_V1
 // HW_V1: INA139NA current sense amplifier constants
 // Current calculation: I = V_adc / (CurSenseGain * RShunt)
-namespace hw_v1 {
-static constexpr float CurSenseGain = 40.0f;             // Gain resistor: 40kΩ
-static constexpr float RShunt = 0.075f;                  // Shunt resistor: 0.075Ω
-static constexpr float Divisor = CurSenseGain * RShunt;  // Pre-computed: 3.0
-}  // namespace hw_v1
+static constexpr float CurSenseGain = 40.0f;                     // Gain resistor: 40kΩ
+static constexpr float RShunt = 0.075f;                          // Shunt resistor: 0.075Ω
+static constexpr float CurSenseDivisor = CurSenseGain * RShunt;  // Pre-computed: 3.0
 
+static constexpr auto CurSenseChan = Adc1::Channel::In2;
+using CurSense = GpioInputA2;
+using CurSenseAdc = CurSense::In2;  // ADC signal type for connect<>
+#else
 // HW_V2: TPS1H100B integrated current sense with current mirror
 // The TPS1H100B sources I_out/K through RCS to GND
 // V_CS = (I_out / K) × R_CS  =>  I_out = (V_CS × K) / R_CS
 // K = 500 (current sense ratio for Version B)
 // R_CS = 1kΩ (external sense resistor to GND)
 // Current calculation: I_out = V_CS × K / R_CS = V_CS × 500 / 1000 = V_CS × 0.5
-namespace hw_v2 {
-static constexpr float K = 500.0f;           // Current sense ratio (Version B)
-static constexpr float RCS = 1000.0f;        // Sense resistor to GND: 1kΩ
-static constexpr float K_div_RCS = K / RCS;  // Pre-computed: 0.5
-}  // namespace hw_v2
+static constexpr float CurSenseK = 500.0f;                         // Current sense ratio (Version B)
+static constexpr float CurSenseRCS = 1000.0f;                      // Sense resistor to GND: 1kΩ
+static constexpr float CurSenseKDivRCS = CurSenseK / CurSenseRCS;  // Pre-computed: 0.5
 
-#ifdef HW_V1
-static constexpr auto CurSenseChan = Adc1::Channel::In2;
-using CurSense = GpioInputA2;
-using CurSenseAdc = CurSense::In2;  // ADC signal type for connect<>
-#else
 static constexpr auto CurSenseChan = Adc1::Channel::In3;
 using CurSense = GpioInputA3;
 using CurSenseAdc = CurSense::In3;  // ADC signal type for connect<>
 #endif
+/// @}
+}  // namespace adc
 
-/**
- * @brief Calculate current from ADC voltage reading (hardware-specific)
- * @param voltage_adc ADC voltage in volts
- * @return Current in amperes
- */
-inline float CalculateCurrent(float voltage_adc) {
-#ifdef HW_V1
-  // HW_V1: INA139NA current sense amplifier
-  // I = V_adc / (Gain × R_shunt) = V_adc / 3.0
-  return voltage_adc / hw_v1::Divisor;
-#else
-  // HW_V2: TPS1H100B with current mirror
-  // I_out = V_CS × (K / R_CS) = V_CS × 0.5
-  return voltage_adc * hw_v2::K_div_RCS;
-#endif
-}
-
+/// @ingroup modm_board_xescyfr4
+/// @{
 #ifdef PROTO_DEBUG
 // Forward declaration - definition in board.cpp
 extern modm::IODeviceWrapper<proto_uart::Uart, modm::IOBuffer::BlockIfFull> LoggerDevice;

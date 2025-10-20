@@ -39,9 +39,6 @@ using namespace std::chrono_literals;
 // Global state.
 bool wrong_hw = false;  // True if FW doesn't match detected HW
 
-// ADC data buffer (required by AdcSampler).
-std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {};
-
 // LED GPIO objects.
 ModmGpio<LedGreen> led_green_gpio;
 ModmGpio<LedRed_v1> led_red_v1_gpio;
@@ -62,6 +59,7 @@ XescYFR4StatusPacket status = {};
  * @brief Update fault detection and LED indicators.
  */
 void UpdateFaults() {
+  static uint32_t last_fault_millis = 0;
   uint32_t faults = 0;
   bool is_shutdown = host::Shutdown::read();
 
@@ -93,7 +91,7 @@ void UpdateFaults() {
   }
 
 #ifdef HW_V1
-  // VMS FAULTs (V1 hardware only).
+  // HW_V1: INA181 discrete fault detection via dedicated pin
   if (!vm_switch::Fault::read()) {
     if (vm_switch::In::isSet()) {
       // VM-Switch is "on"
@@ -103,11 +101,51 @@ void UpdateFaults() {
       faults |= FAULT_OPEN_LOAD;
     }
   }
+#else
+  // HW_V2: TPS1H100B fault detection via CS pin voltage
+  // The TPS1H100B signals faults on the CS pin that we're already reading via ADC
+  // According to datasheet:
+  // - Normal operation: V_CS in linear region (0-4V), proportional to current
+  // - Fault conditions: V_CS pulled to V_CS,h (typically ~5V, above ADC range)
+  //   * Short to GND / Current limit
+  //   * Thermal shutdown / Thermal swing
+  // - Open load (ON-state): V_CS ≈ 0 (very low current)
+
+  const float cs_voltage = AdcSampler::getValue(AdcSampler::Sensors::CurrentSense);
+
+  // Check for V_CS,h condition (fault signaling)
+  // V_CS,h is typically 5V, but our ADC reads max 3.3V (VDDA)
+  // If CS voltage is at or near VDDA, the actual voltage is likely higher (V_CS,h)
+  constexpr float VCS_H_THRESHOLD = 3.2f;  // 97% of typical 3.3V VDDA
+
+  if (vm_switch::In::isSet() && !is_shutdown) {
+    // Motor should be running - check for faults
+    if (cs_voltage >= VCS_H_THRESHOLD) {
+      // V_CS,h detected - could be:
+      // - Short to GND / Current limit
+      // - Thermal shutdown
+      // - Thermal swing
+      // The TPS1H100B auto-recovers when fault clears
+      faults |= FAULT_OVERCURRENT;  // Use existing fault code for now
+    } else if (cs_voltage < 0.01f) {
+      // Very low voltage with motor enabled = Open load
+      // Open load threshold: < 5mA according to datasheet
+      // At 5mA: V_CS = (0.005A / 500) * 1000Ω = 0.01V
+      // faults |= FAULT_OPEN_LOAD;
+    }
+  } else if (!vm_switch::In::isSet() && !is_shutdown) {
+    // Motor off - check for open load in off-state
+    // In off-state with open load: CS pin pulled to V_CS,h
+    if (cs_voltage >= VCS_H_THRESHOLD) {
+      faults |= FAULT_OPEN_LOAD;
+    }
+  }
 #endif
 
   // Update fault code and LED indicators.
   if (faults) {
     status.fault_code = faults;
+    last_fault_millis = MILLIS;
 
     // Update LED indicators based on fault priority.
     if (faults & FAULT_UNINITIALIZED) {
@@ -128,15 +166,18 @@ void UpdateFaults() {
   } else {
     // No faults - update status LED.
     if (is_shutdown) {
-      status_led.Blink(100U, 1800U, 1);  // Short pulse
+      status_led.Blink(
+          {.on_time_ms = 100U, .off_time_ms = 1800U, .blink_cycle_limit = 1, .complete = true});  // Short pulse
     } else {
       status_led.On();
     }
 
     // Reset fault indication if cleared.
     if (status.fault_code != 0) {
-      error_led.Off();
-      status.fault_code = 0;
+      if (MILLIS - last_fault_millis > MIN_FAULT_TIME_MILLIS || status.fault_code == FAULT_WATCHDOG) {
+        error_led.Off();
+        status.fault_code = 0;
+      }
     }
   }
 }
@@ -180,20 +221,18 @@ void UpdateStatus() {
   status.tacho = motor_control::GetSaTacho();
   status.tacho_absolute = motor_control::GetSaTacho();
   status.rpm = motor_control::GetRpm();
-  status.temperature_pcb = AdcSampler::getInternalTemp();
-  status.current_input = Board::CalculateCurrent(AdcSampler::getVoltage(AdcSampler::Sensors::CurSense));
+  status.temperature_pcb = AdcSampler::getValue(AdcSampler::Sensors::Temp);
+  status.current_input = AdcSampler::getValue(AdcSampler::Sensors::CurrentSense);
 
 #if (defined PROTO_DEBUG_COMMS || defined PROTO_DEBUG_MOTOR || defined PROTO_DEBUG_ADC)
-  MODM_LOG_INFO << "TX status.fault_code=" << status.fault_code;
+  MODM_LOG_INFO << "TX status.fault_code=" << HEX_BYTE(status.fault_code);
 #ifdef PROTO_DEBUG_MOTOR
   MODM_LOG_INFO << ", tacho=" << status.tacho << ", ticks=" << motor_control::GetSaTicks() << ", rpm=" << status.rpm;
 #endif
 #ifdef PROTO_DEBUG_ADC
 
-  MODM_LOG_DEBUG << " VRef=" << AdcSampler::getInternalVref_u() << "mV, " << AdcSampler::getInternalVref_f() << "mV"
-                 << " Temp=" << AdcSampler::getInternalTemp()
-                 << " CurrentSense=" << AdcSampler::getVoltage(AdcSampler::Sensors::CurSense) << "V, "
-                 << status.current_input << "A";
+  MODM_LOG_DEBUG << " VRef=" << AdcSampler::getValue(AdcSampler::Sensors::VRef) << "V"
+                 << " Temp=" << status.temperature_pcb << " CurrentSense=" << status.current_input << "A";
 #endif
   MODM_LOG_INFO << modm::endl << modm::flush;
 #endif
@@ -202,6 +241,7 @@ void UpdateStatus() {
 }
 
 /**
+ *
  * @brief Status Timer ISR - called every STATUS_CYCLE ms.
  */
 MODM_ISR(TIM14) {

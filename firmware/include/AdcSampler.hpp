@@ -31,128 +31,25 @@ using namespace modm::literals;
 class AdcSampler : public modm::platform::Adc1 {
  public:
   enum Sensors : uint8_t {
-    VRef = 0,
-    CurSense,  // = In2
-    Temp,
+    VRef = 0,      // Internal Reference Voltage
+    CurrentSense,  // Current Sense
+    Temp,          // Junction Temperature
   };
 
   // Has to match Sensors order. FIXME: Somehow static
   static constexpr std::array<Channel, 3> sequence{
       Channel::InternalReference,
-      Board::CurSenseChan,
+      Board::adc::CurSenseChan,
       Channel::Temperature,
   };
 
-  /**
-   * @brief Initialize, connect, configure and start free running ADC1
-   *
-   * Target: ~10Hz update rate with best possible accuracy
-   * - Sample Time: 160.5 cycles (maximum for STM32C011)
-   * - Oversampling: 128x with /8 shift → 14-bit effective resolution
-   * - ADC Clock: 750 kHz (optimal for accuracy without FPU overhead)
-   *
-   * Update rate calculation:
-   * 3 channels × (160.5 + 12.5) cycles × 128 oversamples / 750 kHz ≈ 88ms → ~11Hz
-   */
-  static void init() {
-#ifdef PROTO_DEBUG_ADC
-    MODM_LOG_INFO << "AdcSampler::init" << modm::endl << modm::flush;
-#endif
-    // Initialize ADC with optimal accuracy settings for non-FPU MCU
-    initialize<Board::SystemClock, ClockMode::Asynchronous, 750_kHz>();
-    connect<Board::CurSenseAdc>();           // Hardware version independent (defined in board.hpp)
-    setSampleTime(SampleTime::Cycles160_5);  // Maximum sample time for best accuracy
-    setResolution(ADC_RESOLUTION);
-    setRightAdjustResult();
-    // 128x oversampling with /8 shift → 14-bit effective (2 extra bits)
-    // Better SNR than 32x, still acceptable speed for 10Hz target
-    enableOversampling(OversampleRatio::x128, OversampleShift::Div8);
-    setChannels(sequence);
-    enableInterruptVector(15);
-    enableInterrupt(Interrupt::EndOfConversion);
-    AdcInterrupt1::attachInterruptHandler(sequence_handler);
-    enableFreeRunningMode();
-    startConversion();
-  };
-
-  static void disable() {
-    disableInterrupt(Interrupt::EndOfConversion);
-    disableFreeRunningMode();
-    stopConversion();
-  }
-
-  /**
-   * @brief Get internal measured VRef
-   *
-   * @return float
-   */
-  static float getInternalVref_f() {
-    return (float)(VDDA_CAL * uint32_t(*VREFINT_CAL)) / _data.at(Sensors::VRef) / 1000.0f;
-  }
-
-  /**
-   * @brief Get internal measured VRef
-   *
-   * @return uint16_t
-   */
-  static uint16_t getInternalVref_u() {
-    return (VDDA_CAL * uint32_t(*VREFINT_CAL)) / _data.at(Sensors::VRef);
-  }
-
-  /**
-   * @brief Get internal measured junction temp
-   *
-   * @return uint16_t
-   */
-  static uint16_t getInternalTemp() {
-    const int32_t value = ((_data.at(Sensors::Temp) * getInternalVref_u() / VDDA_CAL) - int32_t(*TS_CAL1)) * 1000;
-    return (value / TS_AVG_SLOPE) + TS_CAL1_TEMP;
-  }
-
-  /**
-   * @brief Get the voltage of the given ADC sensor.
-   * Attention: For the internal VRef and Temp sensors, see getInternal...() functions.
-   *
-   * @param sensor
-   * @return float
-   */
-  static float getVoltage(const Sensors sensor) {
-    return (getInternalVref_f() * _data.at(sensor)) / ADC_NUM_CODES;
-  }
+  static void init();  // Initialize, connect, configure and start free running ADC1
+  static void disable();
+  static float getValue(const Sensors sensor);  // Get (cached) value of sensor in his related unit (V, A, °C)
 
  private:
-  static std::array<uint16_t, sequence.size()> _data;  // ADC data buffer indexed in the order of sequence
+  static std::array<uint16_t, sequence.size()> _data;        // ADC data buffer indexed in the order of sequence
+  static std::array<float, sequence.size()> _cached_values;  // In their related unit (V, A, °C)
 
-  static void sequence_handler() {
-    static uint8_t seq_idx = 0;
-    auto flag = getInterruptFlags();
-
-    /*// Debug ADC IRQ Flags
-    if (flag & InterruptFlag::EndOfConversion)
-        MODM_LOG_DEBUG << "C";
-
-    if (flag & InterruptFlag::EndOfSequence)
-        MODM_LOG_DEBUG << "S";
-
-    if (flag & InterruptFlag::Overrun)
-        MODM_LOG_DEBUG << "O";
-
-    MODM_LOG_DEBUG << ", ";*/
-
-    if (flag & InterruptFlag::EndOfConversion) {
-      acknowledgeInterruptFlags(InterruptFlag::EndOfConversion);  // Always ack EOC
-      if (!(flag & InterruptFlag::Overrun)) {                     // In the case of an OVR, we can't trust our seq_idx
-        if (seq_idx < sequence.size()) {                          // Ensure array bounds
-          _data.at(seq_idx) = Adc1::getValue();
-          seq_idx++;
-        }
-      }
-    }
-
-    if (flag & InterruptFlag::EndOfSequence) {
-      acknowledgeInterruptFlags(InterruptFlag::EndOfSequence |
-                                InterruptFlag::Overrun);  // Also (and earliest) ack a possible overrun
-      seq_idx = 0;
-    }
-  }
+  static void sequence_handler();
 };
