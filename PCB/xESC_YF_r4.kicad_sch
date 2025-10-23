@@ -5256,7 +5256,7 @@
 		)
 		(uuid "0ee10b43-1aa1-4f4e-a3bb-9001ee18feb4")
 	)
-	(text "Current-Sense and Current-Limit Calculations\n----------------------\nRev4 Motor specs:\nI_{nom} = 30W/24V = 1.25A\nI_{typ_load} = 180mA (free running) to 800mA (heavy load)\nI_{max} = 1.5A\nI_{idle} = 12mA\n\nCurrent-Sense calc:\nK = 500\nR_{CS} = (V_{CS} * K) / I_{OUT} = (3V * 500) / 1.5A = 1000 Ohm\n\nI_{OUT} = 1.5A => V_{CS} = 3V\nV_{cs,H} >= 3.13V (usable ADC range = 0-3.1V)\n\nCurrent-Limit calc:\nV_{cl,th} = 1.233\nK_{CL} = 2000\nR_{CL} = (V_{cl,th} * K_{CL}) / I_{OUT} = (1.233 * 2000) / 1.5A = 1644 Ohm\nMore common R_{CL} = 1.8k Ohm\nI_{OUT-limit} = (V_{cl,th} * K_{CL}) / R_{CL} = (1.233 * 2000) / 1800 = 1.37A\n"
+	(text "Current-Sense and Current-Limit Calculations\n----------------------\nRev4 Motor specs:\nI_{nom} = 30W/24V = 1.25A\nI_{typ_load} = 180mA (free running) to 800mA (heavy load)\nI_{max} = 1.5A\nI_{idle} = 10-12mA\nI_{spin-empty} = 190mA\n\nCurrent-Sense calc:\nK = 500\nR_{CS} = (V_{CS} * K) / I_{OUT} = (3V * 500) / 1.5A = 1000 Ohm\n\nI_{OUT} = 1.5A => V_{CS} = 3V\nV_{cs,H} >= 3.13V (usable ADC range = 0-3.1V)\n\nCurrent-Limit calc:\nV_{cl,th} = 1.233\nK_{CL} = 2000\nR_{CL} = (V_{cl,th} * K_{CL}) / I_{OUT} = (1.233 * 2000) / 1.5A = 1644 Ohm\nMore common R_{CL} = 1.8k Ohm\nI_{OUT-limit} = (V_{cl,th} * K_{CL}) / R_{CL} = (1.233 * 2000) / 1800 = 1.37A\n"
 		(exclude_from_sim no)
 		(at 297.434 85.344 0)
 		(effects
@@ -5331,6 +5331,20 @@
 			(justify left)
 		)
 		(uuid "c7a8fc7e-3267-46f3-a1a8-eca4b68c350c")
+	)
+	(text "TODO\n-----\n- Change:\n  - D5 to: MM3Z3V3, SOD-323, i.e. C123917\n  - R16 to: 1k\n  - Rcl R14 to 750 Ohm or similar with <= 1%"
+		(exclude_from_sim no)
+		(at 199.39 19.812 0)
+		(effects
+			(font
+				(size 1.524 1.524)
+				(thickness 0.3048)
+				(bold yes)
+				(color 255 0 26 1)
+			)
+			(justify left)
+		)
+		(uuid "cc0a8726-44db-4ce8-8d7d-f27f364503e0")
 	)
 	(text "R_{CL}"
 		(exclude_from_sim no)
