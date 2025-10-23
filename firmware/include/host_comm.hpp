@@ -18,34 +18,32 @@
 
 #pragma once
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
+
 #include "xesc_yfr4_datatypes.h"
 
 namespace host_comm {
 
-    // Initialize host communication.
-    void Init();
+// Initialize host communication.
+void Init();
 
-    // Process incoming UART data (call from main loop).
-    void ProcessUartData();
+// Process incoming UART data (call from main loop).
+void ProcessUartData();
 
-    // Send a message via COBS encoding.
-    void SendMessage(void* message, size_t size);
+// Send a message via COBS encoding.
+void SendMessage(void* message, size_t size);
 
-    // Get last watchdog timestamp.
-    uint32_t GetLastWatchdogMillis();
+// Has watchdog timed out.
+bool HasWatchdogTimedOut();
 
-    // Update last watchdog timestamp.
-    void UpdateWatchdog();
+// Update last watchdog timestamp.
+void UpdateWatchdog();
 
-    // Check if settings are valid.
-    bool AreSettingsValid();
+// Check if settings are valid.
+bool AreSettingsValid();
 
-    // Get current settings.
-    const XescYFR4SettingsPacket& GetSettings();
-
-    // Get current duty setpoint (from last control packet).
-    float GetDutySetpoint();
+// Get current settings.
+const XescYFR4SettingsPacket& GetSettings();
 
 }  // namespace host_comm

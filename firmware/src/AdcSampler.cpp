@@ -27,36 +27,37 @@ using namespace modm::literals;
 // ADC data buffer (required by AdcSampler).
 std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {};
 std::array<float, AdcSampler::sequence.size()> AdcSampler::_cached_values = {};
+bool AdcSampler::_cache_dirty = false;
 
 /**
  * @brief Initialize, connect, configure and start free running ADC1
  *
- * Target: ~10Hz update rate with best possible accuracy
- * - Sample Time: 160.5 cycles (maximum for STM32C011)
- * - Oversampling: 64x with Div4 (Shift=2) → 14-bit result for good SNR
- * - ADC Clock: 750 kHz
+ * Target: Complete within 20ms status cycle with optimized accuracy
+ * - Sample Time: 160.5 cycles (max. for STM32C011)
+ * - Oversampling: 32x with Div2 (Shift=1) → 16-bit effective result
+ * - ADC Clock: 1.5 MHz
  *
  * Update rate calculation:
- * 3 channels × (160.5 + 12.5) cycles × 64 oversamples / 750 kHz ≈ 14 ms per sequencer cycle (~71 Hz)
+ * 3 channels × (160.5 + 12.5) cycles × 32 oversamples / 1.5 MHz = 11.1 ms per sequencer cycle
+ * This leaves ample time for floating-point calculations within the 20ms cycle
  */
 void AdcSampler::init() {
 #ifdef PROTO_DEBUG_ADC
   MODM_LOG_INFO << "AdcSampler::init" << modm::endl << modm::flush;
 #endif
-  // Initialize ADC with optimal accuracy settings
-  initialize<Board::SystemClock, ClockMode::Asynchronous, 750_kHz>();
+  initialize<Board::SystemClock, ClockMode::Asynchronous, 1.5_MHz>();
   connect<Board::adc::CurSenseAdc>();      // Hardware version independent (defined in board.hpp)
-  setSampleTime(SampleTime::Cycles160_5);  // Maximum sample time for best accuracy
+  setSampleTime(SampleTime::Cycles160_5);  // Good balance of accuracy and speed
   setResolution(ADC_RESOLUTION);
   setRightAdjustResult();
-  // 64x oversampling with Div4 (2-bit shift) → 14-bit effective (2 extra bits)
-  enableOversampling(OversampleRatio::x64, OversampleShift::Div4);
+  enableOversampling(OversampleRatio::x32, OversampleShift::Div2);
 
   setChannels(sequence);
   enableInterruptVector(15);
   enableInterrupt(Interrupt::EndOfConversion);
   AdcInterrupt1::attachInterruptHandler(sequence_handler);
   enableFreeRunningMode();
+  _cache_dirty = true;
   startConversion();
 }
 
@@ -66,15 +67,9 @@ void AdcSampler::disable() {
   stopConversion();
 }
 
-/**
- * @brief Get internal measured junction temp
- *
- * @return uint16_t
- */
-// uint16_t AdcSampler::getInternalTemp() {
-//   const int32_t value = ((_data.at(Sensors::Temp) * getInternalVref_u() / VDDA_CAL) - int32_t(*TS_CAL1)) * 1000;
-//   return (value / TS_AVG_SLOPE) + TS_CAL1_TEMP;
-// }
+bool AdcSampler::getCacheDirty() {
+  return _cache_dirty;
+}
 
 /**
  * @brief Get the (cached) value of the given sensor in his related unit (V, A, °C)
@@ -84,6 +79,16 @@ void AdcSampler::disable() {
  */
 float AdcSampler::getValue(const Sensors sensor) {
   return _cached_values[sensor];
+}
+
+void AdcSampler::switchToSingleShot() {
+  disableFreeRunningMode();
+  stopConversion();
+}
+
+void AdcSampler::triggerConversion() {
+  _cache_dirty = true;
+  startConversion();
 }
 
 void AdcSampler::sequence_handler() {
@@ -116,7 +121,9 @@ void AdcSampler::sequence_handler() {
                               InterruptFlag::Overrun);  // Also (and earliest) ack a possible overrun
     seq_idx = 0;
 
-    // Update cached values after each ADC sequence
+    // Update cached values after each ADC sequence.
+    // These expensive float calcs could be moved to outside the IRQ if needed due to timing
+    // constraints but for now it also fits to here (20ms cycle)
     uint32_t vref_int = (VDDA_CAL * uint32_t(*VREFINT_CAL)) / _data.at(Sensors::VRef);
 
     _cached_values[Sensors::VRef] = (static_cast<uint32_t>(VDDA_CAL) << 2) *
@@ -126,21 +133,15 @@ void AdcSampler::sequence_handler() {
     // Skipped expensive float calculation in favor of integer math
     //_cached_values[Sensors::CurrentSense] = _cached_values[Sensors::VRef] * _data.at(Sensors::CurrentSense) /
     //                                        (static_cast<uint32_t>(ADC_NUM_CODES) << 4);  // Why <<4 and not <<2?!
-    _cached_values[Sensors::CurrentSense] = float(vref_int * _data.at(Sensors::CurrentSense) / ADC_NUM_CODES) / 1000.0f;
+    float v_cs = float(vref_int * _data.at(Sensors::CurrentSense) / ADC_NUM_CODES) / 1000.0f;
 
-    // I_CS see board.hpp for constexpr
-#ifdef HW_V1
-    // HW_V1: INA139NA current sense amplifier
-    // I = V_adc / (Gain × R_shunt)
-    _cached_values[Sensors::CurrentSense] /= Board::adc::CurSenseDivisor;
-#else
-    // HW_V2: TPS1H100B with current mirror
-    // I_out = V_CS × (K / R_CS)
-    _cached_values[Sensors::CurrentSense] *= Board::adc::CurSenseKDivRCS;
-#endif
+    // I_CS
+    _cached_values[Sensors::CurrentSense] = Board::adc::CalculateCurrent(v_cs);
 
     // Junction temperature in °C see reference manual for formula
     _cached_values[Sensors::Temp] =
         ((((_data.at(Sensors::Temp) * vref_int / VDDA_CAL) - int32_t(*TS_CAL1)) * 1000) / TS_AVG_SLOPE) + TS_CAL1_TEMP;
+
+    _cache_dirty = false;
   }
 }

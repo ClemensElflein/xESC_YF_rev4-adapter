@@ -35,30 +35,43 @@ namespace Board {
 using namespace modm::literals;
 
 struct SystemClock {
-  static constexpr uint32_t Frequency = 48_MHz;  // 48MHz generated from internal RC
+  static constexpr uint32_t Frequency = Rcc::HsiFrequency;  // 48MHz generated from internal RC
   static constexpr uint32_t Ahb = Frequency;
-  static constexpr uint32_t Apb = Frequency;
+  static constexpr uint32_t Apb = 24_MHz;
 
-  static constexpr uint32_t Adc1 = Frequency;
-  static constexpr uint32_t Crc = Ahb;
-  static constexpr uint32_t Flash = Ahb;
-  static constexpr uint32_t Exti = Ahb;
-  static constexpr uint32_t Rcc = Ahb;
+  static constexpr uint32_t Adc1 = Apb;
+
+  static constexpr uint32_t Spi1 = Apb;
+
+  static constexpr uint32_t Usart1 = Apb;
+  static constexpr uint32_t Usart2 = Apb;
+
+  static constexpr uint32_t I2c1 = Apb;
+
   static constexpr uint32_t Timer1 = Apb;
+  static constexpr uint32_t Timer2 = Apb;
   static constexpr uint32_t Timer3 = Apb;
   static constexpr uint32_t Timer14 = Apb;
   static constexpr uint32_t Timer16 = Apb;
   static constexpr uint32_t Timer17 = Apb;
-  static constexpr uint32_t Usart1 = Ahb;
-  static constexpr uint32_t Usart2 = Ahb;
+  static constexpr uint32_t Iwdg = Rcc::LsiFrequency;
+  static constexpr uint32_t Rtc = Rcc::LsiFrequency;
 
   static bool inline enable() {
-    Rcc::enableInternalClock();                       // 48MHz generated from internal RC
-    Rcc::setHsiSysDivider(Rcc::HsiSysDivider::Div1);  // = 48MHz HSISYS
+    Rcc::enableLowSpeedInternalClock();
+    Rcc::enableRealTimeClock(Rcc::RealTimeClockSource::Lsi);
+
+    // 48MHz generated from internal RC
+    Rcc::enableInternalClock();
+    Rcc::setHsiSysDivider(Rcc::HsiSysDivider::Div1);
+    // set flash latency for 48MHz
     Rcc::setFlashLatency<Frequency>();
-    Rcc::setAhbPrescaler(Rcc::AhbPrescaler::Div1);  // = 48MHz HCLK
-    Rcc::setApbPrescaler(Rcc::ApbPrescaler::Div1);  // = 48MHz PCLK/APB Timer Clocks
-    Rcc::updateCoreFrequency<Frequency>();          // update frequencies for busy-wait delay functions
+    // switch system clock to PLL output
+    Rcc::setAhbPrescaler(Rcc::AhbPrescaler::Div1);
+    Rcc::setApbPrescaler(Rcc::ApbPrescaler::Div2);  // 24 MHz for APB
+    // update frequencies for busy-wait delay functions
+    Rcc::updateCoreFrequency<Frequency>();
+
     return true;
   }
 };
@@ -166,6 +179,24 @@ static constexpr auto CurSenseChan = Adc1::Channel::In3;
 using CurSense = GpioInputA3;
 using CurSenseAdc = CurSense::In3;  // ADC signal type for connect<>
 #endif
+
+/**
+ * @brief Calculate current from ADC voltage reading (hardware-specific)
+ * @param voltage_adc ADC voltage in volts
+ * @return Current in amperes
+ */
+inline float CalculateCurrent(float voltage_adc) {
+#ifdef HW_V1
+  // HW_V1: INA139NA current sense amplifier
+  // I = V_adc / (Gain × R_shunt) = V_adc / 3.0
+  return voltage_adc / CurSenseDivisor;
+#else
+  // HW_V2: TPS1H100B with current mirror
+  // I_out = V_CS × (K / R_CS) = V_CS × 0.5
+  return voltage_adc * CurSenseKDivRCS;
+#endif
+}
+
 /// @}
 }  // namespace adc
 

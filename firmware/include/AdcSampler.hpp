@@ -46,10 +46,14 @@ class AdcSampler : public modm::platform::Adc1 {
   static void init();  // Initialize, connect, configure and start free running ADC1
   static void disable();
   static float getValue(const Sensors sensor);  // Get (cached) value of sensor in his related unit (V, A, °C)
+  static bool getCacheDirty();
+  static void switchToSingleShot();  // Switch from free-running to single-shot mode
+  static void triggerConversion();   // Manually trigger ADC conversion (single-shot mode)
 
  private:
   static std::array<uint16_t, sequence.size()> _data;        // ADC data buffer indexed in the order of sequence
   static std::array<float, sequence.size()> _cached_values;  // In their related unit (V, A, °C)
+  static bool _cache_dirty;  // Indicate that the _cached_values need update because new ADC sequence started
 
   static void sequence_handler();
 };

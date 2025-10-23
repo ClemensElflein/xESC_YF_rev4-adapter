@@ -19,6 +19,7 @@
 // SOFTWARE.
 
 #include <modm/platform.hpp>
+#include <numeric>
 
 #include "AdcSampler.hpp"
 #include "board.hpp"
@@ -62,31 +63,27 @@ void UpdateFaults() {
   static uint32_t last_fault_millis = 0;
   uint32_t faults = 0;
   bool is_shutdown = host::Shutdown::read();
+  const auto& settings = host_comm::GetSettings();
+  float cs_current = AdcSampler::getValue(AdcSampler::Sensors::CurrentSense);
+  static uint8_t overcurrent_limit_count = 0;
 
-  // FAULT_WRONG_HW_VERSION - Check if wrong hardware version firmware is
-  // running.
+  // FAULT_WRONG_HW_VERSION - Check if wrong hardware version firmware is running
   if (wrong_hw) {
     faults |= FAULT_WRONG_HW_VERSION;
   }
 
-  // FAULT_UNINITIALIZED.
+  // FAULT_UNINITIALIZED
   if (!host_comm::AreSettingsValid()) {
     faults |= FAULT_UNINITIALIZED;
   }
 
-  // FAULT_WATCHDOG.
-  if (MILLIS - host_comm::GetLastWatchdogMillis() > WATCHDOG_TIMEOUT_MILLIS) {
+  // FAULT_WATCHDOG
+  if (host_comm::HasWatchdogTimedOut()) {
     faults |= FAULT_WATCHDOG;
   }
 
-  // FAULT_OVERCURRENT.
-  if (status.current_input > static_cast<double>(HW_LIMIT_CURRENT)) {
-    faults |= FAULT_OVERCURRENT;
-  }
-
-  // FAULT_OVERTEMP_PCB.
-  const auto& settings = host_comm::GetSettings();
-  if (status.temperature_pcb > static_cast<double>(std::min(HW_LIMIT_PCB_TEMP, settings.max_pcb_temp))) {
+  // FAULT_OVERTEMP_PCB
+  if (AdcSampler::getValue(AdcSampler::Sensors::Temp) > (std::min(HW_LIMIT_PCB_TEMP, settings.max_pcb_temp))) {
     faults |= FAULT_OVERTEMP_PCB;
   }
 
@@ -111,38 +108,56 @@ void UpdateFaults() {
   //   * Thermal shutdown / Thermal swing
   // - Open load (ON-state): V_CS ≈ 0 (very low current)
 
-  const float cs_voltage = AdcSampler::getValue(AdcSampler::Sensors::CurrentSense);
-
   // Check for V_CS,h condition (fault signaling)
   // V_CS,h is typically 5V, but our ADC reads max 3.3V (VDDA)
   // If CS voltage is at or near VDDA, the actual voltage is likely higher (V_CS,h)
-  constexpr float VCS_H_THRESHOLD = 3.2f;  // 97% of typical 3.3V VDDA
+  static const float ICS_H_THRESHOLD = Board::adc::CalculateCurrent(3.2f);  // 97% of typical 3.3V VDDA
 
   if (vm_switch::In::isSet() && !is_shutdown) {
     // Motor should be running - check for faults
-    if (cs_voltage >= VCS_H_THRESHOLD) {
+    if (cs_current >= ICS_H_THRESHOLD) {
       // V_CS,h detected - could be:
       // - Short to GND / Current limit
       // - Thermal shutdown
       // - Thermal swing
       // The TPS1H100B auto-recovers when fault clears
       faults |= FAULT_OVERCURRENT;  // Use existing fault code for now
-    } else if (cs_voltage < 0.01f) {
-      // Very low voltage with motor enabled = Open load
-      // Open load threshold: < 5mA according to datasheet
-      // At 5mA: V_CS = (0.005A / 500) * 1000Ω = 0.01V
-      // faults |= FAULT_OPEN_LOAD;
+    } else {
+      // Only trigger open load if very low current happens a definable amount of times
+      if (cs_current < 0.002f) {
+        faults |= FAULT_OPEN_LOAD;
+      }
     }
   } else if (!vm_switch::In::isSet() && !is_shutdown) {
     // Motor off - check for open load in off-state
     // In off-state with open load: CS pin pulled to V_CS,h
-    if (cs_voltage >= VCS_H_THRESHOLD) {
+    if (cs_current >= ICS_H_THRESHOLD) {
       faults |= FAULT_OPEN_LOAD;
     }
   }
 #endif
 
-  // Update fault code and LED indicators.
+  // Handle FAULT_OVERCURRENT only if VMC is enabled and FAULT_OPEN_LOAD not already happen
+  const float overcurrent_limit = std::min(HW_LIMIT_CURRENT, settings.motor_current_limit);
+  if (vm_switch::In::isSet() && !(faults & FAULT_OPEN_LOAD) && cs_current > overcurrent_limit) {
+    if (overcurrent_limit_count++ >= 10) {  // Require 10 consecutive overcurrent readings (200ms at 20ms status update)
+      faults |= FAULT_OVERCURRENT;
+    }
+  } else {
+    overcurrent_limit_count = 0;
+  }
+
+  // Enable/disable VMC based on faults, shutdown state or safely stopped motor
+  // Do this after open-load or over-current evaluation, to give adc a chance to read the new values
+  if (!(faults & FAULT_OPEN_LOAD) && !host::Shutdown::read()) {
+    vm_switch::In::set();
+    Timer1::enableInterrupt(motor::SACaptureInterrupt);
+  } else if (motor_control::hasMotorSafelyStopped()) {
+    Timer1::disableInterrupt(motor::SACaptureInterrupt);
+    vm_switch::In::reset();
+  }
+
+  // Update LED indicators and status.fault_code
   if (faults) {
     status.fault_code = faults;
     last_fault_millis = MILLIS;
@@ -155,7 +170,7 @@ void UpdateFaults() {
     }
 
     if (faults & FAULT_WRONG_HW_VERSION) {
-      error_led.On();  // Steady on (clear indication)
+      error_led.Blink({.on_time_ms = 1000, .off_time_ms = 1000});  // Slow blink (0.5Hz)
     } else if (faults & FAULT_OPEN_LOAD) {
       error_led.Blink(125U, 125U, 0);  // Quick blink (4Hz)
     } else if (faults & (FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT)) {
@@ -174,6 +189,7 @@ void UpdateFaults() {
 
     // Reset fault indication if cleared.
     if (status.fault_code != 0) {
+      // Reset faults only if MIN_FAULT_TIME_MILLIS passed, or if it was a dedicated watchdog fault
       if (MILLIS - last_fault_millis > MIN_FAULT_TIME_MILLIS || status.fault_code == FAULT_WATCHDOG) {
         error_led.Off();
         status.fault_code = 0;
@@ -186,37 +202,16 @@ void UpdateFaults() {
  * @brief Update status and handle faults - called every STATUS_CYCLE.
  */
 void UpdateStatus() {
-  status.seq++;
+  static bool first_update = true;
 
   // Update fault detection and LED status.
   UpdateFaults();
 
-  bool has_faults = (status.fault_code != 0);
-  bool is_shutdown = host::Shutdown::read();
+  // Update motor state based on setpoint, faults and last tacho (20ms ago)
+  motor_control::UpdateMotorState((status.fault_code != 0), host::Shutdown::read(), status.tacho);
 
-  // Enable/disable VMC based on faults and shutdown state
-  if (!(status.fault_code & FAULT_OPEN_LOAD) && !is_shutdown) {
-    vm_switch::In::set();
-    // FIXME once migrated:
-    // Timer1::enableInterrupt(Timer1::Interrupt::CaptureCompare4);
-  } else if (motor_control::UpdateMotorStoppedState(status.tacho)) {
-    // FIXME once migrated:
-    // Timer1::disableInterrupt(Timer1::Interrupt::CaptureCompare4);
-    vm_switch::In::reset();
-  }
-
-  // Update motor state based on setpoint and faults.
-  motor_control::SetDutySetpoint(host_comm::GetDutySetpoint());
-  motor_control::UpdateMotorState(has_faults, is_shutdown);
-
-  // Handle motor stopped detection.
-  if (motor_control::GetDuty() == 0.0f) {
-    motor_control::UpdateMotorStoppedState(status.tacho);
-  } else {
-    motor_control::ResetMotorStoppedCycles();
-  }
-
-  // Update status packet.
+  // Update status packet
+  status.seq++;
   status.duty_cycle = motor_control::GetDuty();
   status.tacho = motor_control::GetSaTacho();
   status.tacho_absolute = motor_control::GetSaTacho();
@@ -225,18 +220,27 @@ void UpdateStatus() {
   status.current_input = AdcSampler::getValue(AdcSampler::Sensors::CurrentSense);
 
 #if (defined PROTO_DEBUG_COMMS || defined PROTO_DEBUG_MOTOR || defined PROTO_DEBUG_ADC)
-  MODM_LOG_INFO << "TX status.fault_code=" << HEX_BYTE(status.fault_code);
+  MODM_LOG_INFO << "TX status.fault_code=0x" << modm::hex << status.fault_code << modm::ascii;
 #ifdef PROTO_DEBUG_MOTOR
   MODM_LOG_INFO << ", tacho=" << status.tacho << ", ticks=" << motor_control::GetSaTicks() << ", rpm=" << status.rpm;
 #endif
 #ifdef PROTO_DEBUG_ADC
-
-  MODM_LOG_DEBUG << " VRef=" << AdcSampler::getValue(AdcSampler::Sensors::VRef) << "V"
+  MODM_LOG_DEBUG << " Dirty=" << AdcSampler::getCacheDirty()
+                 << " VRef=" << AdcSampler::getValue(AdcSampler::Sensors::VRef) << "V"
                  << " Temp=" << status.temperature_pcb << " CurrentSense=" << status.current_input << "A";
 #endif
   MODM_LOG_INFO << modm::endl << modm::flush;
 #endif
 
+  // Disable ADC free running mode and manually start conversion to get fresh data for next status update
+  if (first_update) {
+    AdcSampler::switchToSingleShot();
+    first_update = false;
+  }
+  // Before sending the status, trigger a new conversion for next cycle
+  AdcSampler::triggerConversion();
+
+  // Send status packet
   host_comm::SendMessage(&status, sizeof(status));
 }
 
@@ -251,23 +255,34 @@ MODM_ISR(TIM14) {
 
 /**
  * @brief SA (Hall sensor) Capture/Compare ISR.
+ *
+ * Timer configuration:
+ * - 16-bit up-counter (0xFFFF max)
+ * - Prescaler: 60 (24MHz / 60 = 400kHz timer clock)
+ * - Capture on rising edge of Hall sensor
+ * - 4 Hall edges per motor revolution
+ *
+ * Overflow handling: When timer overflows between captures, the difference
+ * calculation automatically handles it via 32-bit arithmetic.
  */
 MODM_ISR(TIM1_CC) {
   static uint16_t last_cc_value = 0;
-  uint16_t temp_cc_value = Timer1::getCompareValue<motor::SATimChan>();
+  uint16_t current_cc_value = Timer1::getCompareValue<motor::SATimChan>();
   uint32_t temp_ticks;
 
   Timer1::acknowledgeInterruptFlags(motor::SACaptureFlag);
   motor_control::UpdateSaTacho();
 
-  if (Timer1::getInterruptFlags() & Timer1::InterruptFlag::Update) {
-    Timer1::acknowledgeInterruptFlags(Timer1::InterruptFlag::Update);
-    temp_ticks = temp_cc_value + (0xffff - last_cc_value);
+  // Calculate ticks since last capture
+  // This handles overflow automatically via 32-bit arithmetic
+  if (current_cc_value >= last_cc_value) {
+    temp_ticks = current_cc_value - last_cc_value;
   } else {
-    temp_ticks = temp_cc_value - last_cc_value;
+    // Timer overflow occurred between captures
+    temp_ticks = (0x10000 - last_cc_value) + current_cc_value;
   }
 
-  last_cc_value = temp_cc_value;
+  last_cc_value = current_cc_value;
   motor_control::UpdateSaTicks(temp_ticks);
 }
 
@@ -335,7 +350,6 @@ int main() {
 
   // Initialize subsystems
   AdcSampler::init();
-  motor_control::Init();
   host_comm::Init();
 
   // Prepare status message.
@@ -351,9 +365,8 @@ int main() {
   Timer1::setPrescaler(SA_TIMER_PRESCALER);
   Timer1::setOverflow(0xFFFF);
   Timer1::configureInputChannel<motor::SATimChan>(Timer1::InputCaptureMapping::InputOwn,
-                                                  Timer1::InputCapturePrescaler::Div1,  // Must match
-                                                                                        // SA_TIMER_INPUT_PRESCALER
-                                                  Timer1::InputCapturePolarity::Rising, SA_TIMER_MIN_TICKS);
+                                                  Timer1::InputCapturePrescaler::Div1,  // Don't divide input captures
+                                                  Timer1::InputCapturePolarity::Both, 1);
   Timer1::enableInterrupt(motor::SACaptureInterrupt);
   Timer1::enableInterruptVector(motor::SACaptureInterrupt, true, 21);
   Timer1::applyAndReset();

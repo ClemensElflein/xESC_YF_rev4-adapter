@@ -17,112 +17,103 @@
 // SOFTWARE.
 
 #include "motor_control.hpp"
+
+#include <modm/platform.hpp>
+
 #include "board.hpp"
 #include "config.h"
-#include <modm/platform.hpp>
 
 using namespace Board;
 
 namespace motor_control {
 
-    // Internal state.
-    namespace {
-        volatile float duty_ = 0.0f;
-        float duty_setpoint_ = 0.0f;
-        volatile uint32_t sa_ticks_ = 0;
-        volatile uint32_t sa_tacho_ = 0;
-        uint8_t motor_stopped_cycles_ = 0;
-        uint16_t rpm_ = 0;
-    }  // namespace
+// Internal state.
+namespace {
+volatile float duty_ = 0.0f;
+float duty_setpoint_ = 0.0f;
+volatile uint32_t sa_ticks_ = 0;
+volatile uint32_t sa_tacho_ = 0;
+uint8_t motor_stopped_cycles_ = 0;
+}  // namespace
 
-    void Init() {
-        // Motor control pins are initialized in Board::initialize()
-        duty_ = 0.0f;
-        duty_setpoint_ = 0.0f;
-        sa_ticks_ = 0;
-        sa_tacho_ = 0;
-        motor_stopped_cycles_ = 0;
-        rpm_ = 0;
+void SetDutySetpoint(float duty) {
+  duty_setpoint_ = duty;
+}
+
+float GetDuty() {
+  return duty_;
+}
+
+// Update motor state based on faults, shutdown signal and current tacho.
+// Handles also BRK release once safely stopped.
+void UpdateMotorState(bool has_faults, bool is_shutdown, uint32_t last_tacho) {
+  float new_duty = (has_faults || is_shutdown) ? 0.0f : duty_setpoint_;
+
+  // Handle safe stop and BRK release
+  if (new_duty == 0.0f) {
+    UpdateMotorStoppedState(last_tacho);
+  }
+
+  if (new_duty == duty_) return;
+
+  if (new_duty == 0.0f) {
+    // Stop motor.
+    motor::RS::set();   // !RS off
+    motor::Brk::set();  // Brake
+  } else {
+    // Start motor.
+    motor::Brk::reset();  // Release brake
+    motor::RS::reset();   // !RS on
+  }
+  duty_ = new_duty;
+  motor_stopped_cycles_ = 0;
+}
+
+uint32_t GetSaTacho() {
+  return sa_tacho_;
+}
+
+uint32_t GetSaTicks() {
+  return sa_ticks_;
+}
+
+uint16_t GetRpm() {
+  // RPM calculation constant
+  constexpr uint32_t rpm_divisor = (Board::SystemClock::Timer1 * SA_TIMER_PRESCALER) / SA_TIMER_PRESCALER;
+
+  if (sa_ticks_ > 0) {
+    return rpm_divisor / sa_ticks_;
+  }
+  return 0;
+}
+
+bool hasMotorSafelyStopped() {
+  return (motor_stopped_cycles_ > NUM_STATUS_CYCLES_MOTOR_STOPPED);
+}
+
+bool UpdateMotorStoppedState(uint32_t last_tacho) {
+  if (sa_tacho_ == last_tacho) {
+    // Motor appears stopped (same tacho value) but at very low RPM tacho might not change every cycle
+    if (hasMotorSafelyStopped()) {
+      sa_ticks_ = 0;
+      motor::Brk::reset();  // Release brake
+      return true;
+    } else {
+      motor_stopped_cycles_++;
     }
+  } else {
+    motor_stopped_cycles_ = 0;
+  }
+  return false;
+}
 
-    void SetDutySetpoint(float duty) {
-        duty_setpoint_ = duty;
-    }
+// Called from ISR - must be accessible from interrupt context.
+void UpdateSaTacho() {
+  sa_tacho_++;
+}
 
-    float GetDuty() {
-        return duty_;
-    }
-
-    void UpdateMotorState(bool has_faults, bool is_shutdown) {
-        float new_duty = (has_faults || is_shutdown) ? 0.0f : duty_setpoint_;
-
-        if (new_duty == duty_) {
-            return;
-        }
-
-        if (new_duty == 0.0f) {
-            // Stop motor.
-            motor::RS::set();   // !RS off
-            motor::Brk::set();  // Brake
-        } else {
-            // Start motor.
-            motor::Brk::reset();  // Release brake
-            motor::RS::reset();   // !RS on
-        }
-
-        duty_ = new_duty;
-    }
-
-    uint32_t GetSaTacho() {
-        return sa_tacho_;
-    }
-
-    uint32_t GetSaTicks() {
-        return sa_ticks_;
-    }
-
-    uint16_t GetRpm() {
-        if (sa_ticks_ > 0) {
-            /* Calculate RPM based on sa_ticks:
-             * RPM = 60 / ((1/TimClock) * TimPrescaler * (CapCompTicks * 4 (Cycles/360°) / InputPrescaler))
-             * RPM = (15 * TimClock * InputPrescaler) / (TimPrescaler * CapCompTicks)
-             */
-            rpm_ = (15 * SystemClock::Timer1 * SA_TIMER_INPUT_PRESCALER) /
-                SA_TIMER_PRESCALER / sa_ticks_;
-        }
-        return rpm_;
-    }
-
-    void ResetMotorStoppedCycles() {
-        motor_stopped_cycles_ = 0;
-    }
-
-    bool UpdateMotorStoppedState(uint32_t current_tacho) {
-        if (sa_tacho_ == current_tacho) {
-            // Motor appears stopped (same tacho value).
-            if (motor_stopped_cycles_ > NUM_STATUS_CYCLES_MOTOR_STOPPED) {
-                sa_ticks_ = 0;
-                rpm_ = 0;
-                motor::Brk::reset();  // Release brake
-                return true;
-            } else {
-                motor_stopped_cycles_++;
-            }
-        } else {
-            motor_stopped_cycles_ = 0;
-        }
-        return false;
-    }
-
-    // Called from ISR - must be accessible from interrupt context.
-    void UpdateSaTacho() {
-        sa_tacho_++;
-    }
-
-    void UpdateSaTicks(uint32_t ticks) {
-        if (ticks >= SA_TIMER_MIN_TICKS) {
-            sa_ticks_ = ticks;
-        }
-    }
+void UpdateSaTicks(uint32_t ticks) {
+  sa_ticks_ = ticks;
+}
 
 }  // namespace motor_control
