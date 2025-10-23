@@ -307,12 +307,16 @@ int main() {
     // V1 binary on V2 hardware -> Initialize V2 LED GPIO.
     led_red_v2_gpio.SetOutput(Gpio::OutputType::PushPull);
     error_led.SetGpio(&led_red_v2_gpio);
+#ifdef PROTO_DEBUG
     MODM_LOG_ERROR << "CRITICAL: V1 firmware on V2 hardware detected!" << modm::endl;
+#endif
 #else
     // V2 binary on V1 hardware -> Initialize V1 LED GPIO.
     led_red_v1_gpio.SetOutput(Gpio::OutputType::PushPull);
     error_led.SetGpio(&led_red_v1_gpio);
+#ifdef PROTO_DEBUG
     MODM_LOG_ERROR << "CRITICAL: V2 firmware on V1 hardware detected!" << modm::endl;
+#endif
 #endif
   } else {
 #ifdef HW_V1
