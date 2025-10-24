@@ -122,25 +122,26 @@ void AdcSampler::sequence_handler() {
     seq_idx = 0;
 
     // Update cached values after each ADC sequence.
-    // These expensive float calcs could be moved to outside the IRQ if needed due to timing
-    // constraints but for now it also fits to here (20ms cycle)
-    uint32_t vref_int = (VDDA_CAL * uint32_t(*VREFINT_CAL)) / _data.at(Sensors::VRef);
+    // The expensive float calcs could be moved to outside of the INT routine if needed
+    // due to timing constraints, but for now it also fits to here (20ms cycle)
 
-    _cached_values[Sensors::VRef] = (static_cast<uint32_t>(VDDA_CAL) << 2) *
-                                    (static_cast<uint32_t>(*VREFINT_CAL) << 2) / _data.at(Sensors::VRef) / 1000.0f;
+    // Some oversampled constants
+    constexpr uint32_t vdda_cal_ovs = VDDA_CAL << 2;
+    const uint32_t vrefint_cal_ovs = *VREFINT_CAL << 2;
+
+    // V_REF
+    uint32_t vref_mv = (vdda_cal_ovs * vrefint_cal_ovs) / _data.at(Sensors::VRef);
+    _cached_values[Sensors::VRef] = vref_mv / 1000.0f;
 
     // V_CS
-    // Skipped expensive float calculation in favor of integer math
-    //_cached_values[Sensors::CurrentSense] = _cached_values[Sensors::VRef] * _data.at(Sensors::CurrentSense) /
-    //                                        (static_cast<uint32_t>(ADC_NUM_CODES) << 4);  // Why <<4 and not <<2?!
-    float v_cs = float(vref_int * _data.at(Sensors::CurrentSense) / ADC_NUM_CODES) / 1000.0f;
+    float v_cs = vref_mv * _data.at(Sensors::CurrentSense) / (ADC_NUM_CODES << 4) / 1000.0f;
 
     // I_CS
     _cached_values[Sensors::CurrentSense] = Board::adc::CalculateCurrent(v_cs);
 
-    // Junction temperature in °C see reference manual for formula
-    _cached_values[Sensors::Temp] =
-        ((((_data.at(Sensors::Temp) * vref_int / VDDA_CAL) - int32_t(*TS_CAL1)) * 1000) / TS_AVG_SLOPE) + TS_CAL1_TEMP;
+    // Junction temperature in °C
+    uint32_t sense_data = static_cast<uint32_t>(_data.at(Sensors::Temp)) * vref_mv / VDDA_CAL;
+    _cached_values[Sensors::Temp] = ((sense_data - *TS_CAL1) / TS_AVG_SLOPE) + TS_CAL1_TEMP;
 
     _cache_dirty = false;
   }
