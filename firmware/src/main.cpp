@@ -170,7 +170,7 @@ void UpdateFaults() {
     }
 
     if (faults & FAULT_WRONG_HW_VERSION) {
-      error_led.Blink({.on_time_ms = 1000, .off_time_ms = 1000});  // Slow blink (0.5Hz)
+      error_led.On();
     } else if (faults & FAULT_OPEN_LOAD) {
       error_led.Blink(125U, 125U, 0);  // Quick blink (4Hz)
     } else if (faults & (FAULT_OVERTEMP_PCB | FAULT_OVERCURRENT)) {
@@ -388,7 +388,7 @@ int main() {
   // Boot-up success indication (3 quick blinks).
   status_led.QuickBlink(3, true);
   if (wrong_hw) {
-    error_led.Blink({.on_time_ms = 1000, .off_time_ms = 1000});  // Slow blink (0.5Hz)
+    error_led.On();
   } else {
     error_led.QuickBlink(3, true);
   }

@@ -263,7 +263,6 @@ Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yar
 
 <table>
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
-  <tr><td></td><td>0.5Hz slow blink</td><td>Wrong firmware version for this hardware version. Reflash correct firmware version</td></tr>
   <tr><td></td><td>5 * blink</td><td>NRST Pin not yet disabled. <b>Keep board powered</b> and watch for further LED codes</td></tr>
   <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>
   <tr><td colspan="2" align="center">3 * quick blink</td><td>'Power up' successful</td></tr>
@@ -338,7 +337,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                                                                                                        |
   | ------- | :----------: | --------------------------------------------------------------------------------------------------------------------------- |
-  | 0.3.0   |  2025-10-02  | - Add support for Rev4-ESC hardware v2.x<br>- Add hardware/firmware version protection with safety fault detection          |
+  | 0.3.0   |  2025-10-25  | - Add support for Rev4-ESC hardware v2.x<br>- Add hardware/firmware version protection with safety fault detection          |
   | 0.2.3   |  2024-10-03  | - Add RPM to status package                                                                                                 |
   | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART                                                                                   |
   | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current                                 |
