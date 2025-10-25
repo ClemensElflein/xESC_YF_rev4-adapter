@@ -204,20 +204,24 @@ void ProcessUartData() {
       // Buffer overflow - reset and signal error.
       SignalCommError();
       rx_buffer_idx_ = 0;
-      return;
+      continue;
     }
 
     if (data == 0) {
       // COBS end marker - process packet.
       DecodeAndProcessPacket(rx_buffer_, rx_buffer_idx_);
       rx_buffer_idx_ = 0;
-      return;
+      continue;
     }
 
     // Check for bootloader trigger string.
-    if (rx_buffer_idx_ == sizeof(BOOTLOADER_TRIGGER_STR) &&
-        strcmp(reinterpret_cast<const char*>(rx_buffer_), BOOTLOADER_TRIGGER_STR) == 0) {
-      jump_system_bootloader();
+    if (rx_buffer_idx_ == sizeof(BOOTLOADER_TRIGGER_STR) - 1) {
+      if (memcmp(rx_buffer_, BOOTLOADER_TRIGGER_STR, sizeof(BOOTLOADER_TRIGGER_STR) - 1) == 0) {
+#ifdef PROTO_DEBUG
+        MODM_LOG_INFO << "INFO: Bootloader trigger received" << modm::endl << modm::flush;
+#endif
+        jump_system_bootloader();
+      }
     }
   }
 }
