@@ -2,8 +2,13 @@ kibot:
   version: 1
 
 preflight:
-  run_drc: true
   run_erc: true
+  run_drc: true
+  # Ignore footprint library mismatch warnings (common with different KiCad versions)
+  filters:
+    - filter: 'Ignore footprint library mismatches'
+      error: 'lib_footprint_mismatch'
+      regex: 'Footprint .* does not match copy in library'
 
   set_text_variables:
     - name: 'git_version'

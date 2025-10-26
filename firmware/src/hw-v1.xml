@@ -1,0 +1,13 @@
+<library>
+  <extends>project.xml</extends>
+  
+  <options>
+    <!-- Override build path for HW V1 -->
+    <option name="modm:build:build.path">../build/v1</option>
+  </options>
+  
+  <collectors>
+    <!-- Hardware variant specific C/C++ defines -->
+    <collect name="modm:build:cppdefines">HW_V1=1</collect>
+  </collectors>
+</library>

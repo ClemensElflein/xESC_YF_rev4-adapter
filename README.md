@@ -24,10 +24,9 @@
     <br />
   </p>
 
-  <a href="https://github.com/ClemensElflein/xESC_YF_rev4-adapter">
-    <img src="assets/xESC_YF_r4_v1.0.png" alt="Logo">
-  </a>
-
+  |             v1.x Hardware              |             v2.x Hardware              |
+  | :------------------------------------: | :------------------------------------: |
+  | ![HW v1.x](assets/xESC_YF_r4_v1.0.png) | ![HW v1.x](assets/xESC_YF_r4_v2.0.png) |
 
 </div>
 
@@ -82,6 +81,49 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ## Firmware Installation
 
+### Requirements
+
+* You need an ST-Link debugger/programmer, like one of the cheap "ST-Link V2" probes from one of the big online retailer.
+* [STLINK Tools](https://github.com/stlink-org/stlink) >= v1.8.0 (earlier versions do **not** support the used STM32C0x MCU)
+
+### Hardware Version Branding
+
+Starting with hardware version 2.0, the adapters MCU needs to be branded by flashing a hardware config into the OTP area.
+
+#### Branding Process:
+
+1. **Generate** Hardware Config Binaries
+
+   ```bash
+   cd firmware/host-hw-config
+   lbuild build
+   scons
+   ```
+
+   This creates i.e.:
+   - `hw_config_v1.0.bin` - Hardware v1.0 configuration
+   - `hw_config_v2.0.bin` - Hardware v2.0 configuration
+  
+1. **Connect your ST-Link** to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
+
+1. **Flash** Hardware Config
+
+   ```bash
+   # Flash/Brand v2.0 config with ST-Link/V2
+   STM32_Programmer_CLI -c port=SWD -d hw_config_v2.0.bin 0x1FFF7000
+   ```
+
+The branding process writes a small hardware information structure to the first two OTP dwords. **Take attention** that OTP flash can be written only once!
+
+**Important Notes:**
+- Branding only needs as well as "can" be done only **once per device**
+- The branding **truly survives firmware updates** (because OTP flash can be written only once)
+- Hardware Version 1.x boards don't need branding. Non-branded devices get assumed to be v1.0 hardware
+<br>
+<br>
+
+**Firmware Installation Variants**
+
 We've two options to install the firmware. Either via:<br>
 - ST-Link debugger/programmer, for which you need to have access to the adapter PCB's SWDIO pins, or via
 - Open-Mower's UART via STM32 internal bootloader (which can be done with a closed mower)
@@ -89,10 +131,6 @@ We've two options to install the firmware. Either via:<br>
 
 ### Firmware Installation via ST-Link debugger/programmer
 
-#### Requirements
-
-* You need an ST-Link debugger/programmer, like one of the cheap "ST-Link V2" probes from one of the big online retailer.
-* [STLINK Tools](https://github.com/stlink-org/stlink) >= v1.8.0 (earlier versions do **not** support the used STM32C0x MCU)
 
 #### Flash
 
@@ -103,6 +141,8 @@ We've two options to install the firmware. Either via:<br>
    st-flash --reset write firmware_xesc_yf_rev4.bin 0x08000000
    ```
    When done, st-flash should report 'Flash written and verified! jolly good!' (or similar) and immediately reboot.<br>
+
+   **Only relevant for v1.x hardware:**
 
    > [!WARNING]  
    > Do not unplug now!
@@ -120,6 +160,8 @@ We've two options to install the firmware. Either via:<br>
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Firmware Installation via serial connection (UART)
+
+Firmware flashing via UART is currently only possible with OpenMower V1 based hardware!
 
 #### Requirements
 
@@ -175,6 +217,8 @@ Once *box64* got installed, you should be able to start the STM32Programmer CLI 
 6. Reset the device (start our newly flashed program):<br>
    `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=/dev/ttyAMA3 --go 0x08000000`
 
+   **Only relevant for v1.x hardware:**
+
    > [!WARNING]  
    > Do not power-off now!
    
@@ -212,7 +256,7 @@ Once adapted, restart openmower via: `sudo systemctl restart openmower`
 
 ### OpenMower V2 based Hardware: (xCore Firmware)
 
-TODO: Install xCore firmware: openmower-yardforce-v4.bin
+Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yardforce-v4"`
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -221,15 +265,17 @@ TODO: Install xCore firmware: openmower-yardforce-v4.bin
 
 <table>
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
-  <tr><td></td><td>5 * blink</td><td>NRST Pin not yet disabled. <b>Keep board powered</b> and watch for further LED codes</td></tr>
-  <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>  <tr><td colspan="2" align="center">3 * flash</td><td>'Power up' successful</td></tr>
+  <tr><td colspan="2" align="center">3 * quick blink</td><td>'Power up' successful</td></tr>
   <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
   <tr><td>0.5Hz flash<br>(short flash every 2 seconds)</td><td></td><td>Shutdown (Sleep) triggered by OpenMower Pico FW</td></tr>
-  <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>
-  <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected).<br> <b>WARNING:</b> Do not connect the motor while the adapter is powered!</td></tr>
-  <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
+  <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>  
   <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
+  <tr><td></td><td>on</td><td><b>Wrong hardware version firmware flashed!</b><br>Motor disabled for safety. Flash correct firmware</td></tr>
+  <tr><td></td><td>5 * blink</td><td>NRST Pin not yet disabled. <b>Keep board powered</b> and watch for further LED codes</td></tr>
+  <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>
+  <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected).<br> <b>WARNING:</b> Do not connect the motor while the adapter is powered!</td></tr>
+  <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
 </table>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -245,10 +291,13 @@ Once done:
   `git clone --recurse-submodules https://github.com/ClemensElflein/xESC_YF_rev4-adapter.git`
 2. Change into the project source directory:<br>
   `cd xESC_YF_rev4-adapter/firmware/src`
-3. Build the modm library files:<br>
-  `lbuild build`
+3. Build the modm library files for a specific hardware version:<br>
+   ```bash
+   # This is for v2.0 hardware building
+   lbuild -c hw-v2.xml build
+   ```
 4. Compile the firmware binary:<br>
-  `scons bin`
+  `scons [profile=<release|debug>] [build]`
 5. Flash firmware:<br>
   For this, a specific [xPack OpenOCD](https://xpack-dev-tools.github.io/openocd-xpack/) version is required. Either install your own one, or use the one within the package folder by:<br>
   `export MODM_OPENOCD_BINARY=../packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd`<br>
@@ -274,26 +323,30 @@ Once done:
     - [x] Motor current consumption
     - [x] PCB temperature (junction temp of STM)
     - [x] Support shutdown signal
-    - [ ] Stock motor (wrong) cabling detection
-    - [x] STM32 bootloader / flash via UART support
+    - [ ] ~~Stock motor (wrong) cabling detection~~
+    - [x] STM32 bootloader / flash via UART support (OpenMower V1 based mainboard)
+    - [ ] UART flash support for OpenMower V2 based carrier-boards
 - [x] ROS driver
     - [x] xesc_ros::xesc_yfr4
     - [x] Add RPM
+- [x] OpenMower Hardware V2 firmware driver
 
 See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+
 ## History
 
-  | Version | Release Date | Info                                          |
-  | ------- | :----------: | --------------------------------------------- |
-  | 0.2.3   |  2024-10-03  | - Add RPM to status package |
-  | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART |
-  | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current |
-  | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature |
-  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection |
-  | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break |
+  | Version | Release Date | Info                                                                                                                                                                                          |
+  | ------- | :----------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | 0.3.0   |  2025-10-25  | - Fix "Open-Load" detection for Rev4-ESC hardware v1.0<br>- Improve load current and RPM calculations<br>- Add hardware/firmware mixup protection<br>- Add support for Rev4-ESC hardware v2.x |
+  | 0.2.3   |  2024-10-03  | - Add RPM to status package                                                                                                                                                                   |
+  | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART                                                                                                                                                     |
+  | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current                                                                                                   |
+  | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature                                                                   |
+  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection                                                                                                          |
+  | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break                                                                                                                                                 |
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -332,19 +385,6 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 Project Link: [https://github.com/ClemensElflein/xESC_YF_rev4-adapter](https://github.com/ClemensElflein/xESC_YF_rev4-adapter)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ACKNOWLEDGMENTS -->
-<!--
-## Acknowledgments
-
-* []()
-* []()
-* []()
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-->
 
 
 <!-- MARKDOWN LINKS & IMAGES -->

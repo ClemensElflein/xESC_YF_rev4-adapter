@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: INTI-CMNB/KiBot@v2_k8
+      - uses: INTI-CMNB/KiBot@v2_k9
         with:
           config: PCB/xESC_YF_r4.kibot.yaml
           board: PCB/xESC_YF_r4.kicad_pcb
@@ -36,19 +36,27 @@ jobs:
       - name: Update lbuild
         run: |
           pip3 install --upgrade --upgrade-strategy=eager modm
-      - name: Run lbuild
+      - name: Build HW V1 firmware
         run: |
           cd firmware/src
-          lbuild build
-      - name: Compile firmware
+          lbuild -c hw-v1.xml build
+          scons build bin profile=release
+      - name: Clean between builds
         run: |
           cd firmware/src
-          scons build bin
+          lbuild clean
+      - name: Build HW V2 firmware
+        run: |
+          cd firmware/src
+          lbuild -c hw-v2.xml build
+          scons build bin profile=release
       - name: Copy Artifacts
         run: |
-          mkdir artifacts/
-          cp firmware/build/scons-release/xESC_YF_rev4-Firmware.elf ./artifacts/firmware_xesc_yf_rev4.elf
-          cp firmware/build/scons-release/xESC_YF_rev4-Firmware.bin ./artifacts/firmware_xesc_yf_rev4.bin
+          mkdir -p artifacts
+          cp firmware/build/v1/scons-release/xESC_YF_rev4_Firmware.elf ./artifacts/firmware_xesc_yf_rev4_v1.elf
+          cp firmware/build/v1/scons-release/xESC_YF_rev4_Firmware.bin ./artifacts/firmware_xesc_yf_rev4_v1.bin
+          cp firmware/build/v2/scons-release/xESC_YF_rev4_Firmware.elf ./artifacts/firmware_xesc_yf_rev4_v2.elf
+          cp firmware/build/v2/scons-release/xESC_YF_rev4_Firmware.bin ./artifacts/firmware_xesc_yf_rev4_v2.bin
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -64,7 +72,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: INTI-CMNB/KiBot@v2_k8
+      - uses: INTI-CMNB/KiBot@v2_k9
         with:
           config: PCB/xESC_YF_r4.kibot.yaml
           board: PCB/xESC_YF_r4.kicad_pcb

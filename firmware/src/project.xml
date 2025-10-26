@@ -4,14 +4,15 @@
   </repositories>
   <options>
     <option name="modm:build:cmake:include_cmakelists">True</option>
-    <option name="modm:build:project.name">xESC_YF_rev4-Firmware</option>
-    <option name="modm:build:build.path">../build</option>
+    <option name="modm:build:project.name">xESC_YF_rev4_Firmware</option>
     <option name="modm:target">stm32c011f6p6</option>
   </options>
   <collectors>
     <!-- You need to install https://xpack-dev-tools.github.io/openocd-xpack/ >= 0.12.0-3 for STM32C0x support -->
     <collect name="modm:build:openocd.source">interface/stlink.cfg</collect>
     <collect name="modm:build:openocd.source">target/stm32c0x.cfg</collect>
+    <!-- Add include path -->
+    <collect name="modm:build:path.include">../include</collect>
   </collectors>
   <modules>
     <module>modm:build:scons</module>
@@ -24,7 +25,6 @@
     <module>modm:platform:rcc</module>
     <module>modm:platform:timer:1</module>
     <module>modm:platform:timer:14</module>
-    <!-- <module>modm:platform:timer:16</module> -->
     <module>modm:platform:uart:1</module>
     <module>modm:platform:uart:2</module>
   </modules>

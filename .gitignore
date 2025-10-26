@@ -35,5 +35,10 @@ PCB/production/backups/
 firmware/build/
 firmware/src/modm/
 firmware/src/SConstruct
-firmware/src/project.xml.log
 firmware/src/.sconsign.dblite
+firmware/src/hw-v?.xml.log
+firmware/host-hw-config/modm
+firmware/host-hw-config/.sconsign.dblite
+firmware/host-hw-config/SConstruct
+firmware/host-hw-config/project.xml.log
+.vscode/settings.json
