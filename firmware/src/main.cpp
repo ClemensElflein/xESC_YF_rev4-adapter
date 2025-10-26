@@ -253,39 +253,6 @@ MODM_ISR(TIM14) {
   UpdateStatus();
 }
 
-/**
- * @brief SA (Hall sensor) Capture/Compare ISR.
- *
- * Timer configuration:
- * - 16-bit up-counter (0xFFFF max)
- * - Prescaler: 60 (24MHz / 60 = 400kHz timer clock)
- * - Capture on rising edge of Hall sensor
- * - 4 Hall edges per motor revolution
- *
- * Overflow handling: When timer overflows between captures, the difference
- * calculation automatically handles it via 32-bit arithmetic.
- */
-MODM_ISR(TIM1_CC) {
-  static uint16_t last_cc_value = 0;
-  uint16_t current_cc_value = Timer1::getCompareValue<motor::SATimChan>();
-  uint32_t temp_ticks;
-
-  Timer1::acknowledgeInterruptFlags(motor::SACaptureFlag);
-  motor_control::UpdateSaTacho();
-
-  // Calculate ticks since last capture
-  // This handles overflow automatically via 32-bit arithmetic
-  if (current_cc_value >= last_cc_value) {
-    temp_ticks = current_cc_value - last_cc_value;
-  } else {
-    // Timer overflow occurred between captures
-    temp_ticks = (0x10000 - last_cc_value) + current_cc_value;
-  }
-
-  last_cc_value = current_cc_value;
-  motor_control::UpdateSaTicks(temp_ticks);
-}
-
 int main() {
   // Initialize common hardware.
   Board::initialize();
@@ -354,6 +321,7 @@ int main() {
 
   // Initialize subsystems
   AdcSampler::init();
+  motor_control::Init();
   host_comm::Init();
 
   // Prepare status message.
@@ -361,20 +329,6 @@ int main() {
   status.fw_version_major = 0;
   status.fw_version_minor = 3;
   status.direction = 0;  // Motor has only one direction
-
-  // SA (Hall) input - Capture/Compare timer.
-  Timer1::connect<motor::SATimChan>();
-  Timer1::enable();
-  Timer1::setMode(Timer1::Mode::UpCounter);
-  Timer1::setPrescaler(SA_TIMER_PRESCALER);
-  Timer1::setOverflow(0xFFFF);
-  Timer1::configureInputChannel<motor::SATimChan>(Timer1::InputCaptureMapping::InputOwn,
-                                                  Timer1::InputCapturePrescaler::Div1,  // Don't divide input captures
-                                                  Timer1::InputCapturePolarity::Both, 1);
-  Timer1::enableInterrupt(motor::SACaptureInterrupt);
-  Timer1::enableInterruptVector(motor::SACaptureInterrupt, true, 21);
-  Timer1::applyAndReset();
-  Timer1::start();
 
   // Status Timer.
   Timer14::enable();

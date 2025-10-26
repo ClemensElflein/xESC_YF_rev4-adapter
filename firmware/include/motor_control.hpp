@@ -22,33 +22,22 @@
 
 namespace motor_control {
 
-// Set motor duty cycle setpoint (-1.0 to 1.0).
-void SetDutySetpoint(float duty);
+// Initialize SA timer
+void Init();
 
-// Get current motor duty cycle.
-float GetDuty();
+void SetDutySetpoint(float duty);  // Set motor duty cycle setpoint (-1.0 to 1.0)
+float GetDuty();                   // Get current motor duty cycle
 
 // Update motor state based on faults, shutdown signal and current tacho.
 // Should be called regularly (e.g., in status update cycle).
-void UpdateMotorState(bool has_faults, bool is_shutdown, uint32_t current_tacho);
+void UpdateMotorState(bool has_faults, bool is_shutdown, uint32_t last_tacho);
 
-bool hasMotorSafelyStopped();
-
-// Get SA (Hall sensor) tacho value.
-uint32_t GetSaTacho();
-
-// Get SA timer ticks between signals.
-uint32_t GetSaTicks();
-
-// Calculate and get current RPM.
-uint16_t GetRpm();
+uint32_t GetSaTacho();  // Get SA (Hall sensor) tacho value
+uint32_t GetSaTicks();  // Get SA timer ticks between signals
+uint16_t GetRpm();      // Get RPM
 
 // Check if motor is stopped and update internal counters.
 // Returns true if motor has been stopped for enough cycles.
 bool UpdateMotorStoppedState(uint32_t current_tacho);
-
-// ISR helper functions (called from interrupt context).
-void UpdateSaTacho();
-void UpdateSaTicks(uint32_t ticks);
-
+bool hasMotorSafelyStopped();
 }  // namespace motor_control
