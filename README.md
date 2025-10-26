@@ -161,6 +161,8 @@ We've two options to install the firmware. Either via:<br>
 
 ### Firmware Installation via serial connection (UART)
 
+Firmware flashing via UART is currently only possible with OpenMower V1 based hardware!
+
 #### Requirements
 
 * [STM32CubeProgrammer](https://www.st.com/en/development-tools/stm32cubeprog.html) is the tool we need to flash via UART. But because we like to use it with our OpenMower's Raspberry-Pi, we need it in `aarch64` architecture. Unfortunately (as well as unbelievable) ST's programmer tool for ARM CPU's isn't available *for* ARM CPU's/architectures!!<br>
@@ -263,17 +265,17 @@ Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yar
 
 <table>
   <tr><th>Green</th><th>Red</th><th>Description</th></tr>
-  <tr><td></td><td>5 * blink</td><td>NRST Pin not yet disabled. <b>Keep board powered</b> and watch for further LED codes</td></tr>
-  <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>
   <tr><td colspan="2" align="center">3 * quick blink</td><td>'Power up' successful</td></tr>
   <tr><td>1Hz blink</td><td></td><td>Waiting for init by xesc_ros</td></tr>
   <tr><td>0.5Hz flash<br>(short flash every 2 seconds)</td><td></td><td>Shutdown (Sleep) triggered by OpenMower Pico FW</td></tr>
   <tr><td>on</td><td></td><td>All fine (initialized, xesc_ros connected and no error)</td></tr>  
-  <tr><td></td><td>on</td><td><b>Wrong hardware version firmware flashed!</b><br>Motor disabled for safety. Flash correct firmware</td></tr>
-  <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected).<br> <b>WARNING:</b> Do not connect the motor while the adapter is powered!</td></tr>
-  <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
   <tr><td></td><td>1Hz blink</td><td>Waiting for OpenMower (xesc_ros driver) connect</td></tr>
   <tr><td></td><td>flash</td><td>One single short flash for every host communication error, like packet or CRC error</td></tr>
+  <tr><td></td><td>on</td><td><b>Wrong hardware version firmware flashed!</b><br>Motor disabled for safety. Flash correct firmware</td></tr>
+  <tr><td></td><td>5 * blink</td><td>NRST Pin not yet disabled. <b>Keep board powered</b> and watch for further LED codes</td></tr>
+  <tr><td>5 * blink</td><td></td><td>NRST successful flashed</td></tr>
+  <tr><td></td><td>4Hz quick blink</td><td>Open VMC (no motor connected).<br> <b>WARNING:</b> Do not connect the motor while the adapter is powered!</td></tr>
+  <tr><td></td><td>2Hz fast blink</td><td>VMS temperature issue or over-current detected</td></tr>
 </table>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -321,8 +323,9 @@ Once done:
     - [x] Motor current consumption
     - [x] PCB temperature (junction temp of STM)
     - [x] Support shutdown signal
-    - [ ] Stock motor (wrong) cabling detection
-    - [x] STM32 bootloader / flash via UART support
+    - [ ] ~~Stock motor (wrong) cabling detection~~
+    - [x] STM32 bootloader / flash via UART support (OpenMower V1 based mainboard)
+    - [ ] UART flash support for OpenMower V2 based carrier-boards
 - [x] ROS driver
     - [x] xesc_ros::xesc_yfr4
     - [x] Add RPM
@@ -335,15 +338,15 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
 ## History
 
-  | Version | Release Date | Info                                                                                                                        |
-  | ------- | :----------: | --------------------------------------------------------------------------------------------------------------------------- |
-  | 0.3.0   |  2025-10-25  | - Add support for Rev4-ESC hardware v2.x<br>- Add hardware/firmware version protection with safety fault detection          |
-  | 0.2.3   |  2024-10-03  | - Add RPM to status package                                                                                                 |
-  | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART                                                                                   |
-  | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current                                 |
-  | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature |
-  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection                                        |
-  | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break                                                                               |
+  | Version | Release Date | Info                                                                                                                                                                                          |
+  | ------- | :----------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | 0.3.0   |  2025-10-25  | - Fix "Open-Load" detection for Rev4-ESC hardware v1.0<br>- Improve load current and RPM calculations<br>- Add hardware/firmware mixup protection<br>- Add support for Rev4-ESC hardware v2.x |
+  | 0.2.3   |  2024-10-03  | - Add RPM to status package                                                                                                                                                                   |
+  | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART                                                                                                                                                     |
+  | 0.2.1   |  2024-08-19  | - Add shutdown signal handling (sleep/power-off VMC)<br>- Handle over-temp and over-current                                                                                                   |
+  | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature                                                                   |
+  | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection                                                                                                          |
+  | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break                                                                                                                                                 |
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
