@@ -88,12 +88,15 @@ void UpdateFaults() {
   }
 
 #ifdef HW_V1
-  // HW_V1: INA181 discrete fault detection via dedicated pin
+  // HW_V1: TPS1H200A via /FAULT pin
   if (!vm_switch::Fault::read()) {
-    if (vm_switch::In::isSet()) {
-      // VM-Switch is "on"
-      // Disable VM-Switch diagnostics when switched on.
-      // TODO: Review if this is correct behavior.
+    if (vm_switch::In::isSet()) {  // VM-Switch is "on"
+      if (cs_current < 0.001f) {
+        faults |= FAULT_OPEN_LOAD;
+      } else {
+        // Disabled because not clear how to detect
+        // faults |= FAULT_OVERTEMP_PCB;
+      }
     } else if (!is_shutdown) {
       faults |= FAULT_OPEN_LOAD;
     }

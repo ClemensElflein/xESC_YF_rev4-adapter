@@ -1,12 +1,12 @@
 #pragma once
 
-#define PROTO_DEBUG  // Enable for debug logging on proto UART2
+// #define PROTO_DEBUG  // Enable for debug logging on proto UART2
 #define PROTO_DEBUG_BAUD 921600_Bd
-#define PROTO_DEBUG_MOTOR  // Enable motor specific debugging messages
-// #define PROTO_DEBUG_COMMS    // Enable Comms msgs of received and sent messages
-// #define PROTO_DEBUG_HOST_RX  // Enable host RX debugging messages (COBS, Packet, ...)
-// #define PROTO_DEBUG_HOST_TX  // Enable host TX debugging messages (COBS, Packet, ...)
-// #define PROTO_DEBUG_ADC  // Enable ADC specific debugging messages
+// #define PROTO_DEBUG_MOTOR  // Enable motor specific debugging messages
+//  #define PROTO_DEBUG_COMMS    // Enable Comms msgs of received and sent messages
+//  #define PROTO_DEBUG_HOST_RX  // Enable host RX debugging messages (COBS, Packet, ...)
+//  #define PROTO_DEBUG_HOST_TX  // Enable host TX debugging messages (COBS, Packet, ...)
+//  #define PROTO_DEBUG_ADC  // Enable ADC specific debugging messages
 
 #undef MODM_LOG_LEVEL
 #define MODM_LOG_LEVEL modm::log::DEBUG  // ERROR, WARNING, INFO, DEUG
