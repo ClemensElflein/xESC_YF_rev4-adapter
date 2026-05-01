@@ -4,6 +4,7 @@ on:
   push:
     paths-ignore:
       - "**.md"
+  workflow_dispatch:
 
 jobs:
 
@@ -29,7 +30,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
+          submodules: "recursive"
       - name: Fix Git permission/ownership problem
         run: |
           git config --global --add safe.directory /__w/modm/modm
@@ -77,7 +78,7 @@ jobs:
           config: PCB/xESC_YF_r4.kibot.yaml
           board: PCB/xESC_YF_r4.kicad_pcb
 
-      - name: 'Fix permissions on release/'
+      - name: "Fix permissions on release/"
         run: sudo chmod 0777 release
 
       - uses: actions/download-artifact@v4
