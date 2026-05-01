@@ -86,38 +86,23 @@ jobs:
           name: Firmware-xESC-YardForce-Rev4
           path: firmware
 
-      - name: Create firmware zip
-        run: zip -r release/firmware_xesc-yf-rev4.zip firmware
+      - name: Create firmware zip with version
+        run: zip -r release/firmware_xesc-yf-rev4-${{ github.ref_name }}.zip firmware
 
       - name: Calculating checksum
         shell: bash
         run: |
-          sha256sum release/firmware_xesc-yf-rev4.zip > release/firmware_xesc-yf-rev4.sha256
+          sha256sum release/firmware_xesc-yf-rev4-${{ github.ref_name }}.zip > release/firmware_xesc-yf-rev4-${{ github.ref_name }}.sha256
 
-      - name: Deploy release
-        uses: peaceiris/actions-gh-pages@v4
-        if: ${{ false }}
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: release
-          destination_dir: release
-
-      - name: Deploy release_navigator
-        uses: peaceiris/actions-gh-pages@v4
-        if: ${{ false }}
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: release_navigator
-          destination_dir: release_navigator
-          keep_files: true
-
-      - name: Deploy release_navigator index
-        uses: peaceiris/actions-gh-pages@v4
-        if: ${{ false }}
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: release_navigator
-          keep_files: true
+          files: |
+            release/firmware_xesc-yf-rev4-${{ github.ref_name }}.zip
+            release/firmware_xesc-yf-rev4-${{ github.ref_name }}.sha256
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   pre-release-latest-firmware:
     runs-on: ubuntu-latest
@@ -140,3 +125,17 @@ jobs:
         shell: bash
         run: |
           sha256sum firmware_xesc-yf-rev4.zip > firmware_xesc-yf-rev4.sha256
+
+      - name: Update latest pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Development Build"
+          body: "Automated pre-release of the latest firmware build from main branch."
+          files: |
+            firmware_xesc-yf-rev4.zip
+            firmware_xesc-yf-rev4.sha256
+          prerelease: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
