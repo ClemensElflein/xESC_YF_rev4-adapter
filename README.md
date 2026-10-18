@@ -338,6 +338,8 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
 ## History
 
+### Firmware
+
   | Version | Release Date | Info                                                                                                                                                                                          |
   | ------- | :----------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
   | 0.3.0   |  2025-10-25  | - Fix "Open-Load" detection for Rev4-ESC hardware v1.0<br>- Improve load current and RPM calculations<br>- Add hardware/firmware mixup protection<br>- Add support for Rev4-ESC hardware v2.x |
@@ -347,7 +349,11 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
   | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature                                                                   |
   | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection                                                                                                          |
   | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break                                                                                                                                                 |
+### Hardware
 
+  | Version | Release Date | Info                                 |
+  | ------- | :----------: | ------------------------------------ |
+  | 2.1.0   |  2026-12-??  | - Improve current sense ADC clamping |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

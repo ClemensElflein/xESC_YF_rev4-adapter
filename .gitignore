@@ -42,3 +42,5 @@ firmware/host-hw-config/.sconsign.dblite
 firmware/host-hw-config/SConstruct
 firmware/host-hw-config/project.xml.log
 .vscode/settings.json
+.vscode/settings.json
+PCB/~xESC_YF_r4.kicad_*.lck
