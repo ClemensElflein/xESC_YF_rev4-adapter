@@ -7,7 +7,7 @@
 	(title_block
 		(title "xESC YardForce Rev.4 Adapter")
 		(date "2026-10-18")
-		(rev "2.1")
+		(rev "2.1.0")
 		(company "Clemens Elflein, openmower.de")
 		(comment 1 "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.")
 		(comment 2 "Licensed under ")
