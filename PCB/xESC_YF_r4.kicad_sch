@@ -6689,7 +6689,7 @@
 		)
 		(uuid "fa53338f-1a28-4527-a794-c50528fa176c")
 	)
-	(text_box "TODO\n-----\n\n4) JP1 value SolderJumper_3_Bridged12 but symbol/footprint are 2-pad SolderJumper_2_Bridged; fix value/BOM.\n5) J7/J8 1x06 pinout VM,VM,+5V,+5V,GND,GND is symmetric: 180deg rotation shorts VM to GND. Use keyed connectors/pin-1 marking. J1 pin4 +5V is tied to J7/J8 +5V and U1 VI: verify no back-feed if the stock controller sources 5V.\n7) D4/R15 ground lift ~0.5-0.6V: IN/DIAG_EN low is ~-0.5V vs -0.3V abs max (4.7k series limits current). CS pin is below device GND at low load (outside 0-4V linear range). Verify 10-12mA on-state open-load (FW 2mA threshold, no debounce); consider Schottky D4 (lower Vf) or direct GND with P-FET.\n8) No VM TVS/bulk cap at U3: add 33V TVS + 1uF/50V for cable/load dump; verify stock controller survives 48V/400ms.\n9) MC_TEMP is only a text note; J1 pins 2/3/6/7/8 are NC. Confirm host does not need MC_TEMP (or route next rev).\n10) UART1 remap PA9->PA11 / PA10->PA12: confirm J4 wiring and 5V tolerance (only PA10/PA12 confirmed FT; review PA0-PA6, PA8, PA11, PB6, PC14/PC15, PF2). Netlist: no multiple-name conflicts (section empty); OUT net is unnamed -> label VM_SW.\n11) +BATT library symbols have value VM; net is VM. Rename to a VM power symbol or add VM so symbol/value/net agree; verify J7/J8/J9 are on the same VM net.\n"
+	(text_box "TODO\n-----\n\n5) J7/J8 1x06 pinout VM,VM,+5V,+5V,GND,GND is symmetric: 180deg rotation shorts VM to GND. Use keyed connectors/pin-1 marking. J1 pin4 +5V is tied to J7/J8 +5V and U1 VI: verify no back-feed if the stock controller sources 5V.\n7) D4/R15 ground lift ~0.5-0.6V: IN/DIAG_EN low is ~-0.5V vs -0.3V abs max (4.7k series limits current). CS pin is below device GND at low load (outside 0-4V linear range). Verify 10-12mA on-state open-load (FW 2mA threshold, no debounce); consider Schottky D4 (lower Vf) or direct GND with P-FET.\n8) No VM TVS/bulk cap at U3: add 33V TVS + 1uF/50V for cable/load dump; verify stock controller survives 48V/400ms.\n9) MC_TEMP is only a text note; J1 pins 2/3/6/7/8 are NC. Confirm host does not need MC_TEMP (or route next rev).\n10) UART1 remap PA9->PA11 / PA10->PA12: confirm J4 wiring and 5V tolerance (only PA10/PA12 confirmed FT; review PA0-PA6, PA8, PA11, PB6, PC14/PC15, PF2). Netlist: no multiple-name conflicts (section empty); OUT net is unnamed -> label VM_SW.\n11) +BATT library symbols have value VM; net is VM. Rename to a VM power symbol or add VM so symbol/value/net agree; verify J7/J8/J9 are on the same VM net.\n"
 		(exclude_from_sim no)
 		(at 172.72 -27.94 0)
 		(size 95 36.8894)
@@ -11467,7 +11467,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm"
 			(at 73.66 87.63 0)
 			(hide yes)
 			(show_name no)
