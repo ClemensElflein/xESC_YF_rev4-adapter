@@ -351,9 +351,9 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
   | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break                                                                                                                                                 |
 ### Hardware
 
-  | Version | Release Date | Info                                 |
-  | ------- | :----------: | ------------------------------------ |
-  | 2.1.0   |  2026-12-??  | - Improve current sense ADC clamping |
+  | Version | Release Date | Info                                                                                                               |
+  | ------- | :----------: | ------------------------------------------------------------------------------------------------------------------ |
+  | 2.1.0   |  2026-12-??  | - Improve current sense ADC clamping<br>- Increase HW current limit to 3A<br>- Minor part and routing adjustements |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
