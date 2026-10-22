@@ -652,7 +652,7 @@
           "show": true
         },
         {
-          "group_by": false,
+          "group_by": true,
           "label": "Value",
           "name": "Value",
           "show": true
@@ -661,7 +661,7 @@
           "group_by": false,
           "label": "Datasheet",
           "name": "Datasheet",
-          "show": true
+          "show": false
         },
         {
           "group_by": false,
@@ -701,27 +701,21 @@
         },
         {
           "group_by": false,
-          "label": "LCSC",
-          "name": "LCSC",
-          "show": false
+          "label": "JLCPCB Part #",
+          "name": "JLCPCB Part #",
+          "show": true
         },
         {
           "group_by": false,
           "label": "Part Number",
           "name": "Part Number",
-          "show": false
+          "show": true
         },
         {
           "group_by": false,
-          "label": "Stock_PN",
-          "name": "Stock_PN",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "Beschreibung",
+          "label": "DESCRIPTION",
           "name": "Description",
-          "show": false
+          "show": true
         },
         {
           "group_by": false,
@@ -737,50 +731,8 @@
         },
         {
           "group_by": false,
-          "label": "JLCPCB",
-          "name": "JLCPCB",
-          "show": false
-        },
-        {
-          "group_by": false,
           "label": "CHECK_PRICES",
           "name": "CHECK_PRICES",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "MF",
-          "name": "MF",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "MP",
-          "name": "MP",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "PACKAGE",
-          "name": "PACKAGE",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "PRICE",
-          "name": "PRICE",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "PURCHASE-URL",
-          "name": "PURCHASE-URL",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "Package",
-          "name": "Package",
           "show": false
         },
         {
@@ -791,67 +743,25 @@
         },
         {
           "group_by": false,
-          "label": "Price",
-          "name": "Price",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "Purchase-URL",
-          "name": "Purchase-URL",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "SNAPEDA_LINK",
-          "name": "SNAPEDA_LINK",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "Sim.Device",
-          "name": "Sim.Device",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "Sim.Pins",
-          "name": "Sim.Pins",
-          "show": false
-        },
-        {
-          "group_by": false,
-          "label": "SnapEDA_Link",
-          "name": "SnapEDA_Link",
-          "show": false
-        },
-        {
-          "group_by": false,
           "label": "AVAILABILITY",
           "name": "AVAILABILITY",
           "show": false
         },
         {
           "group_by": false,
-          "label": "DESCRIPTION",
-          "name": "DESCRIPTION",
-          "show": false
-        },
-        {
-          "group_by": false,
           "label": "MFR",
           "name": "MFR",
-          "show": false
+          "show": true
         },
         {
           "group_by": false,
           "label": "MFR PART",
           "name": "MFR PART",
-          "show": false
+          "show": true
         }
       ],
-      "filter_string": "",
-      "group_symbols": false,
+      "filter_string": "C",
+      "group_symbols": true,
       "include_excluded_from_bom": false,
       "name": "",
       "sort_asc": true,
@@ -916,7 +826,7 @@
         "uuid": "f1d82565-2f45-4436-9c4d-3203604bc842"
       }
     ],
-    "used_designators": "R21",
+    "used_designators": "#FLG4,#PWR29,#PWR34,#PWR36-38,#PWR45,C6-9,D6,NT1,R21",
     "variants": []
   },
   "sheets": [
