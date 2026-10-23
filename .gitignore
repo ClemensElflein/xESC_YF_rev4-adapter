@@ -44,3 +44,5 @@ firmware/host-hw-config/project.xml.log
 .vscode/settings.json
 .vscode/settings.json
 PCB/~xESC_YF_r4.kicad_*.lck
+PCB/production/*
+PCB/fabrication-toolkit-options.json
