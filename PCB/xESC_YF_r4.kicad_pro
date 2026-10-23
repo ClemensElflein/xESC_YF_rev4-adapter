@@ -760,7 +760,7 @@
           "show": true
         }
       ],
-      "filter_string": "C",
+      "filter_string": "c",
       "group_symbols": true,
       "include_excluded_from_bom": false,
       "name": "",
@@ -826,7 +826,7 @@
         "uuid": "f1d82565-2f45-4436-9c4d-3203604bc842"
       }
     ],
-    "used_designators": "#FLG4,#PWR29,#PWR34,#PWR36-38,#PWR45,C6-9,D6,NT1,R21",
+    "used_designators": "#FLG4,#PWR29,#PWR34,#PWR36-38,#PWR45,C3,C6-9,D6,NT1,R21",
     "variants": []
   },
   "sheets": [
