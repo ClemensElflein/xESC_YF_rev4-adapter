@@ -760,7 +760,7 @@
           "show": true
         }
       ],
-      "filter_string": "c",
+      "filter_string": "j",
       "group_symbols": true,
       "include_excluded_from_bom": false,
       "name": "",

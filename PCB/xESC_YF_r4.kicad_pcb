@@ -14873,7 +14873,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Value" "Conn_01x06_Pin"
+		(property "Value" "Conn_01x06_Male"
 			(at 0 -15.03 90)
 			(layer "B.Fab")
 			(hide yes)
@@ -15281,7 +15281,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Value" "OM-MB W => MC BRK"
+		(property "Value" "Conn_02x02_Male"
 			(at 1.27 -4.87 0)
 			(layer "B.Fab")
 			(hide yes)
@@ -15687,7 +15687,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Value" "OM-MB V => MC +24V"
+		(property "Value" "Conn_02x02_Male"
 			(at 1.27 -4.87 0)
 			(layer "B.Fab")
 			(hide yes)
@@ -16093,7 +16093,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Value" "OM-MB U <= MC SA"
+		(property "Value" "Conn_02x02_Male"
 			(at 1.27 -4.87 0)
 			(layer "B.Fab")
 			(hide yes)
@@ -21097,14 +21097,6 @@
 		(layer "F.Cu")
 		(net "Net-(D1-A)")
 		(uuid "ff6cbf4d-15be-40d6-bee3-e676eb58a541")
-	)
-	(segment
-		(start 251.075 120.425)
-		(end 251.075 119.8625)
-		(width 0.2)
-		(layer "F.Cu")
-		(net "Net-(Q4-S)")
-		(uuid "00bfb355-e0e3-4b60-964d-a798f1bc716e")
 	)
 	(segment
 		(start 250.7 120.8)

@@ -6726,6 +6726,16 @@
 		)
 		(uuid "0ee10b43-1aa1-4f4e-a3bb-9001ee18feb4")
 	)
+	(text "OM-MB V => MC +24V"
+		(exclude_from_sim no)
+		(at 269.748 70.358 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "160ef7f4-bd1c-4649-a5d1-3407b8bb461f")
+	)
 	(text "Current-Sense and Current-Limit Calculations\n----------------------\nRev4 Motor specs:\nI_{nom} = 30W/24V = 1.25A\nI_{typ_load} = 180mA (free running) to 800mA (heavy load)\nI_{max} = 1.5A\nI_{idle} = 10-12mA\nI_{spin-empty} = 190mA\n\nCurrent-Sense calc:\nK = 500\nR_{CS} = (V_{CS} * K) / I_{OUT} = (3V * 500) / 1.5A = 1000 Ohm\n\nI_{OUT} = 1.5A => V_{CS} = 3V\nV_{cs,H} >= 3.13V (usable ADC range = 0-3.1V)\n\nCurrent-Limit calc:\nV_{cl,th} = 1.233\nK_{CL} = 2000\nR_{CL} = (V_{cl,th} * K_{CL}) / I_{OUT} = (1.233 * 2000) / 1.5A = 1644 Ohm\nMore common R_{CL} = 1.8k Ohm\nI_{OUT-limit} = (V_{cl,th} * K_{CL}) / R_{CL} = (1.233 * 2000) / 1800 = 1.37A\n"
 		(exclude_from_sim no)
 		(at 297.434 85.344 0)
@@ -6736,6 +6746,16 @@
 			(justify left)
 		)
 		(uuid "209db01a-a9a8-4269-94ed-6b3a5c0fbc06")
+	)
+	(text "OM-MB W => MC BRK"
+		(exclude_from_sim no)
+		(at 269.24 142.494 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "2ccfb67f-221b-4250-aca7-fdab443ee3f2")
 	)
 	(text "!!! GN/BK need to be exchanged \non Mow-Motor-Plug or Cable !!!\n\nDetectable via current correlation:\nWith a wrong plug (GN/BK not exchanged),\npulling SA output to 0 decrease current\nfrom 19mA to 12mA, which might be detectable.\nWhereas a correct plug (GN/BK got exchanged),\npulling SA output to 0 increase current\nonly from 11.3mA to 11.6mA.\n\nBUT NOT USABLE, BECAUSE ONCE GN (SA) GET\nCONNECTED WRONGLY TO GND (BECAUSE WIRE NOT CHANGED)\nSA- OUTPUT DRIVER WILL BECOME HIGH-Z!!"
 		(exclude_from_sim no)
@@ -6750,6 +6770,16 @@
 			(justify left)
 		)
 		(uuid "3449d33c-3e3e-43db-a5cf-cffd71c2a5f0")
+	)
+	(text "OM-MB U <= MC SA"
+		(exclude_from_sim no)
+		(at 269.24 114.3 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "4430cbfb-ead2-4adb-94ee-3a1d49f47738")
 	)
 	(text "Open-Load =\n2.4-2.9mA"
 		(exclude_from_sim no)
@@ -11313,7 +11343,7 @@
 				)
 			)
 		)
-		(property "Value" "Conn_01x06_Pin"
+		(property "Value" "Conn_01x06_Male"
 			(at 58.6232 53.594 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12190,7 +12220,7 @@
 				)
 			)
 		)
-		(property "Value" "OM-MB W => MC BRK"
+		(property "Value" "Conn_02x02_Male"
 			(at 269.24 146.6596 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14727,7 +14757,7 @@
 				)
 			)
 		)
-		(property "Value" "OM-MB V => MC +24V"
+		(property "Value" "Conn_02x02_Male"
 			(at 269.24 59.0296 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -17153,7 +17183,7 @@
 				)
 			)
 		)
-		(property "Value" "OM-MB U <= MC SA"
+		(property "Value" "Conn_02x02_Male"
 			(at 269.24 118.7196 0)
 			(show_name no)
 			(do_not_autoplace no)
