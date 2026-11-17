@@ -6804,6 +6804,20 @@
 		)
 		(uuid "89ec3c68-34ce-4b04-808b-042a9ff56f0a")
 	)
+	(text "Rework:\n-----------\n\n- Change R17 to 390 Ohm\n"
+		(exclude_from_sim no)
+		(at 215.646 -0.762 0)
+		(effects
+			(font
+				(size 1.778 1.778)
+				(thickness 0.3556)
+				(bold yes)
+				(color 255 0 12 1)
+			)
+			(justify left)
+		)
+		(uuid "b2e8c500-45cb-418e-a113-f04cae8bca06")
+	)
 	(text "!!! GN/BK need to be exchanged \non Mow-Motor-Plug or Cable !!!"
 		(exclude_from_sim no)
 		(at 86.36 49.53 0)
@@ -6831,7 +6845,7 @@
 	)
 	(text "TODO Software:\n--------------\n\n- HW v2.1, the firmware currently only accepts OTP version 2.0.\n  Update `hw_configs[]` and `checkFlashMatchesBinary()` to 2.1 and\n  generate `hw_config_v2.1.bin`\n"
 		(exclude_from_sim no)
-		(at 127 -11.176 0)
+		(at 103.378 -9.906 0)
 		(effects
 			(font
 				(size 1.778 1.778)
@@ -19377,6 +19391,9 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.254)
+					(bold yes)
+					(color 255 3 16 1)
 				)
 				(justify left)
 			)
@@ -19388,6 +19405,9 @@
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.254)
+					(bold yes)
+					(color 255 0 10 1)
 				)
 			)
 		)
