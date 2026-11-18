@@ -4,7 +4,6 @@
   </repositories>
 
   <options>
-    <option name="modm:build:cmake:include_cmakelists">True</option>
     <option name="modm:build:project.name">HW_Config_Generator</option>
     <option name="modm:build:build.path">../build/hw-config</option>
     <option name="modm:target">hosted-linux</option>

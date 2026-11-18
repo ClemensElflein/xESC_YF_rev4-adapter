@@ -3,7 +3,6 @@
     <repository><path>../ext/modm/repo.lb</path></repository>
   </repositories>
   <options>
-    <option name="modm:build:cmake:include_cmakelists">True</option>
     <option name="modm:build:project.name">xESC_YF_rev4_Firmware</option>
     <option name="modm:target">stm32c011f6p6</option>
   </options>
