@@ -136,7 +136,9 @@ The branding process writes a small hardware version record to the first two OTP
 
 We've two options to install the firmware. Either via:<br>
 - ST-Link debugger/programmer, for which you need to have access to the adapter PCB's SWDIO pins, or via
-- Open-Mower's UART via STM32 internal bootloader (which can be done with a closed mower)
+- Open-Mower's UART via STM32 internal bootloader (only OpenMower V1 based hardware; not supported on V2 carrier boards)
+
+The adapter itself runs on OpenMower V1 and V2 hardware. UART/bootloader flashing is only available on V1; on V2 use the ST-Link/SWD path.
 
 
 ### Firmware Installation via ST-Link debugger/programmer
@@ -171,7 +173,8 @@ We've two options to install the firmware. Either via:<br>
 
 ### Firmware Installation via serial connection (UART)
 
-Firmware flashing via UART is currently only possible with OpenMower V1 based hardware!
+Firmware flashing via UART is currently only possible with OpenMower V1 based hardware.
+The adapter also runs on OpenMower V2 hardware, but UART/bootloader flashing is not supported on the V2 carrier boards; use ST-Link/SWD there.
 
 #### Requirements
 
@@ -290,6 +293,9 @@ Once adapted, restart openmower via: `sudo systemctl restart openmower`
 ### OpenMower V2 based Hardware: (xCore Firmware)
 
 Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yardforce-v4"`
+
+> [!NOTE]
+> The adapter runs on OpenMower V2 hardware, but firmware updates via UART/bootloader are only available on V1. On V2 use ST-Link/SWD.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
