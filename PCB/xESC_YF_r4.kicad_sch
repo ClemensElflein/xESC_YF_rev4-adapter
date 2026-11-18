@@ -6804,7 +6804,7 @@
 		)
 		(uuid "89ec3c68-34ce-4b04-808b-042a9ff56f0a")
 	)
-	(text "Rework:\n-----------\n\n- Change R17 to 390 Ohm\n"
+	(text "Rework:\n-----------\n\n- Change R17 to 510 Ohm\n"
 		(exclude_from_sim no)
 		(at 215.646 -0.762 0)
 		(effects
