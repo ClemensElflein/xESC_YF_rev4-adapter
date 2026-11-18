@@ -40,7 +40,7 @@ void jump_system_bootloader() {
   __disable_irq();    // Disable all interrupts
   SysTick->CTRL = 0;  // Disable Systick timer
   // HAL_RCC_DeInit();// Set the clock to the default state
-  Rcc::setHsiSysDivider(Rcc::HsiSysDivider::Div4);  // Default HsiSysDivider = boot frequency (12MHz)
+  Rcc::enableHsiClock(Rcc::HsiSysPrescaler::Div4);  // Default HsiSysDivider = boot frequency (12MHz)
 
   // Clear Interrupt Enable Register & Interrupt Pending Register
   for (size_t i = 0; i < sizeof(NVIC->ICER) / sizeof(NVIC->ICER[0]); i++) {

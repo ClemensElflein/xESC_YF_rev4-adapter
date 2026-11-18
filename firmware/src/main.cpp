@@ -106,13 +106,13 @@ void UpdateFaults() {
   // The TPS1H100B signals faults on the CS pin that we're already reading via ADC
   // According to datasheet:
   // - Normal operation: V_CS in linear region (0-4V), proportional to current
-  // - Fault conditions: V_CS pulled to V_CS,h (typically ~5V, above ADC range)
+  // - Fault conditions: V_CS pulled to V_CS,h (>= 4.3V, above ADC range)
   //   * Short to GND / Current limit
   //   * Thermal shutdown / Thermal swing
   // - Open load (ON-state): V_CS ≈ 0 (very low current)
 
   // Check for V_CS,h condition (fault signaling)
-  // V_CS,h is typically 5V, but our ADC reads max 3.3V (VDDA)
+  // V_CS,h is >= 4.3V, but our ADC reads max 3.3V (VDDA)
   // If CS voltage is at or near VDDA, the actual voltage is likely higher (V_CS,h)
   static const float ICS_H_THRESHOLD = Board::adc::CalculateCurrent(3.2f);  // 97% of typical 3.3V VDDA
 
@@ -141,7 +141,7 @@ void UpdateFaults() {
 #endif
 
   // Handle FAULT_OVERCURRENT only if VMC is enabled and FAULT_OPEN_LOAD not already happen
-  const float overcurrent_limit = std::min(HW_LIMIT_CURRENT, settings.motor_current_limit);
+  const float overcurrent_limit = std::min(hardware::getHardwareCurrentLimit(), settings.motor_current_limit);
   if (vm_switch::In::isSet() && !(faults & FAULT_OPEN_LOAD) && cs_current > overcurrent_limit) {
     if (overcurrent_limit_count++ >= 10) {  // Require 10 consecutive overcurrent readings (200ms at 20ms status update)
       faults |= FAULT_OVERCURRENT;
@@ -260,6 +260,10 @@ int main() {
   // Initialize common hardware.
   Board::initialize();
 
+  // Select the hardware profile (R17/current limit) from the OTP hardware
+  // version once, before the ADC interrupt starts using it.
+  hardware::initActiveProfile();
+
 #ifdef PROTO_DEBUG
   // Print hardware version info.
   MODM_LOG_INFO << "xESC_YF_rev4 - ";
@@ -271,7 +275,7 @@ int main() {
   // SAFETY: We only initialize the GPIO for the OTHER hardware version
   // to avoid touching unknown GPIOs that might control motors or dangerous
   // hardware!
-  if (!hardware::checkFlashMatchesBinary()) {
+  if (!hardware::checkHardwareVersionMatchesBinary()) {
     wrong_hw = true;
 #ifdef HW_V1
     // V1 binary on V2 hardware -> Initialize V2 LED GPIO.
@@ -330,7 +334,7 @@ int main() {
   // Prepare status message.
   status.message_type = XESCYFR4_MSG_TYPE_STATUS;
   status.fw_version_major = 0;
-  status.fw_version_minor = 3;
+  status.fw_version_minor = 4;
   status.direction = 0;  // Motor has only one direction
 
   // Status Timer.

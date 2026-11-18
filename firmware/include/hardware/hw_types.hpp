@@ -2,9 +2,9 @@
 #include <modm/architecture.hpp>
 
 namespace hardware {
-    // Hardware configuration magic string for flash storage
-    static constexpr const char HARDWARE_CONFIG_MAGIC[] = "ESCYFR4HWV";
-    static constexpr size_t HARDWARE_CONFIG_MAGIC_SIZE = sizeof(HARDWARE_CONFIG_MAGIC);
+    // Hardware version magic string (stored in the OTP area)
+    static constexpr const char HARDWARE_VERSION_MAGIC[] = "ESCYFR4HWV";
+    static constexpr size_t HARDWARE_VERSION_MAGIC_SIZE = sizeof(HARDWARE_VERSION_MAGIC);
 
     struct VersionInfo {
         uint8_t major;

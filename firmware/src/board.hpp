@@ -22,6 +22,7 @@
 #include <modm/platform.hpp>
 
 #include "config.h"
+#include "hardware/hw_version.hpp"
 
 #ifdef PROTO_DEBUG
 #include <modm/debug/logger.hpp>
@@ -58,12 +59,16 @@ struct SystemClock {
   static constexpr uint32_t Rtc = Rcc::LsiFrequency;
 
   static bool inline enable() {
-    Rcc::enableLowSpeedInternalClock();
-    Rcc::enableRealTimeClock(Rcc::RealTimeClockSource::Lsi);
+    // modm 2026q1+ moved the STM32C0 RCC to the new API:
+    // enableLowSpeedInternalClock() -> enableLsiClock()
+    // enableRealTimeClock(src)      -> setRealTimeClockSource(src)
+    // enableInternalClock() +
+    // setHsiSysDivider(div)         -> enableHsiClock(div)
+    Rcc::enableLsiClock();
+    Rcc::setRealTimeClockSource(Rcc::RealTimeClockSource::Lsi);
 
     // 48MHz generated from internal RC
-    Rcc::enableInternalClock();
-    Rcc::setHsiSysDivider(Rcc::HsiSysDivider::Div1);
+    Rcc::enableHsiClock(Rcc::HsiSysPrescaler::Div1);
     // set flash latency for 48MHz
     Rcc::setFlashLatency<Frequency>();
     // switch system clock to PLL output
@@ -166,14 +171,14 @@ using CurSense = GpioInputA2;
 using CurSenseAdc = CurSense::In2;  // ADC signal type for connect<>
 #else
 // HW_V2: TPS1H100B integrated current sense with current mirror
-// The TPS1H100B sources I_out/K through RCS to GND
-// V_CS = (I_out / K) × R_CS  =>  I_out = (V_CS × K) / R_CS
+// The TPS1H100B sources I_out/K through R_CS to GND:
+// V_CS = (I_out / K) * R_CS  =>  I_out = (V_CS * K) / R_CS
 // K = 500 (current sense ratio for Version B)
-// R_CS = 1kΩ (external sense resistor to GND)
-// Current calculation: I_out = V_CS × K / R_CS = V_CS × 500 / 1000 = V_CS × 0.5
-static constexpr float CurSenseK = 500.0f;                         // Current sense ratio (Version B)
-static constexpr float CurSenseRCS = 1000.0f;                      // Sense resistor to GND: 1kΩ
-static constexpr float CurSenseKDivRCS = CurSenseK / CurSenseRCS;  // Pre-computed: 0.5
+// R_CS (R17) is selected at runtime from the hardware profile, which is
+// chosen based on the OTP hardware version:
+//   - HW v1.x / v2.0 : 1000 ohm
+//   - HW v2.1        : 510 ohm
+static constexpr float CurSenseK = 500.0f;  // Current sense ratio (Version B)
 
 static constexpr auto CurSenseChan = Adc1::Channel::In3;
 using CurSense = GpioInputA3;
@@ -192,8 +197,8 @@ inline float CalculateCurrent(float voltage_adc) {
   return voltage_adc / CurSenseDivisor;
 #else
   // HW_V2: TPS1H100B with current mirror
-  // I_out = V_CS × (K / R_CS) = V_CS × 0.5
-  return voltage_adc * CurSenseKDivRCS;
+  // I_out = V_CS * K / R_CS (R_CS comes from the active hardware profile)
+  return voltage_adc * CurSenseK / static_cast<float>(hardware::getCurrentSenseResistor());
 #endif
 }
 

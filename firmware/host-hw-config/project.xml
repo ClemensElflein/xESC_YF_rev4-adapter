@@ -11,7 +11,7 @@
   </options>
 
   <collectors>
-    <!-- Add hardware config include path -->
+    <!-- Add hardware version include path -->
     <collect name="modm:build:path.include">../include</collect>
         <!-- Hardware variant specific C/C++ defines -->
     <collect name="modm:build:cppdefines">HW_BRAND=1</collect>

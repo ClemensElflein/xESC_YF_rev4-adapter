@@ -88,11 +88,11 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ### Hardware Version Branding
 
-Starting with hardware version 2.0, the adapters MCU needs to be branded by flashing a hardware config into the OTP area.
+Starting with hardware version 2.0, the adapters MCU needs to be branded by writing a hardware version record into the OTP area.
 
 #### Branding Process:
 
-1. **Generate** Hardware Config Binaries
+1. **Generate** Hardware Version Binaries
 
    ```bash
    cd firmware/host-hw-config
@@ -101,23 +101,33 @@ Starting with hardware version 2.0, the adapters MCU needs to be branded by flas
    ```
 
    This creates i.e.:
-   - `hw_config_v1.0.bin` - Hardware v1.0 configuration
-   - `hw_config_v2.0.bin` - Hardware v2.0 configuration
+   - `hw_config_v1.0.bin` - Hardware v1.0 version record
+   - `hw_config_v2.0.bin` - Hardware v2.0 version record
+   - `hw_config_v2.1.bin` - Hardware v2.1 version record
   
 1. **Connect your ST-Link** to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and get powered by it!
 
-1. **Flash** Hardware Config
+1. **Write** Hardware Version Record
 
    ```bash
-   # Flash/Brand v2.0 config with ST-Link/V2
+   # Write/brand v2.0 version record with ST-Link/V2
    STM32_Programmer_CLI -c port=SWD -d hw_config_v2.0.bin 0x1FFF7000
+
+   # Write/brand v2.1 version record with ST-Link/V2 (R17 must be 510 Ohm)
+   STM32_Programmer_CLI -c port=SWD -d hw_config_v2.1.bin 0x1FFF7000
    ```
 
-The branding process writes a small hardware information structure to the first two OTP dwords. **Take attention** that OTP flash can be written only once!
+The branding process writes a small hardware version record to the first two OTP double words (64 bit each). **Take attention** that OTP can be written only once!
+
+> [!WARNING]
+> **Hardware v2.1.0** requires reworking the current-sense resistor **R17 = 510 Ω** (1 %, 0603).
+> The firmware selects its analog profile from the OTP hardware version:
+> v2.1 → 510 Ω / 2.0 A, everything else → 1 kΩ / 1.25 A.
+> A v2.1 board **must** be branded with `hw_config_v2.1.bin` and needs firmware >= 0.4.0.
 
 **Important Notes:**
 - Branding only needs as well as "can" be done only **once per device**
-- The branding **truly survives firmware updates** (because OTP flash can be written only once)
+- The branding **truly survives firmware updates** (because OTP can be written only once)
 - Hardware Version 1.x boards don't need branding. Non-branded devices get assumed to be v1.0 hardware
 <br>
 <br>
@@ -283,7 +293,7 @@ Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yar
 
 ## Self-Compile
 
-This project is build with [modm](https://modm.io). You need to install the required toolchain as described in their [Installation](https://modm.io/guide/installation/) section, before going on.
+This project is build with [modm](https://modm.io). You need to install the required toolchain as described in their [Installation](https://modm.io/guide/installation/) section, before going on. Note that modm's `repo.lb` additionally requires [GitPython](https://pypi.org/project/GitPython/): `pip3 install modm GitPython`.
 
 Once done:
 
@@ -293,7 +303,7 @@ Once done:
   `cd xESC_YF_rev4-adapter/firmware/src`
 3. Build the modm library files for a specific hardware version:<br>
    ```bash
-   # This is for v2.0 hardware building
+   # This builds for HW v2.0 and v2.1 (same binary, profile selected via OTP)
    lbuild -c hw-v2.xml build
    ```
 4. Compile the firmware binary:<br>
@@ -342,6 +352,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                                                                                                                                                                          |
   | ------- | :----------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | 0.4.0   |  2026-11-17  | - Add support for Rev4-ESC hardware v2.1 (OTP version 2.1)<br>- Select R_CS (R17) and current limit from the OTP-based hardware profile<br>- Bump modm to 2026q3 |
   | 0.3.0   |  2025-10-25  | - Fix "Open-Load" detection for Rev4-ESC hardware v1.0<br>- Improve load current and RPM calculations<br>- Add hardware/firmware mixup protection<br>- Add support for Rev4-ESC hardware v2.x |
   | 0.2.3   |  2024-10-03  | - Add RPM to status package                                                                                                                                                                   |
   | 0.2.2   |  2024-08-25  | - Support STM32 bootloader flash via UART                                                                                                                                                     |
@@ -349,11 +360,12 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
   | 0.2.0   |  2024-08-16  | - Switch from Arduino to modm lib<br>- Integrate flash procedure to disable-NRST<br>- Add Motor current and PCB temperature                                                                   |
   | 0.1.1   |  2024-07-10  | - Open VMC (no motor connected) detection<br>- VMC-short and thermal error detection                                                                                                          |
   | 0.1.0   |  2024-07-05  | Generic functionality like Start, Stop, Break                                                                                                                                                 |
+
 ### Hardware
 
   | Version | Release Date | Info                                                                                                               |
   | ------- | :----------: | ------------------------------------------------------------------------------------------------------------------ |
-  | 2.1.0   |  2026-12-??  | - Improve current sense ADC clamping<br>- Increase HW current limit to 3A<br>- Minor part and routing adjustements |
+  | 2.1.0   |  2026-12-??  | - Improve current sense ADC clamping<br>- Increase HW current limit to 3A (R14/R_CL = 820 Ω)<br>- R17 (R_CS) rework to 510 Ω for the 2 A firmware profile<br>- Minor part and routing adjustments |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

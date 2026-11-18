@@ -39,4 +39,5 @@
 
 // Hardware limits before going into fault
 #define HW_LIMIT_PCB_TEMP 80.0f
-#define HW_LIMIT_CURRENT 1.25f
+// The current limit is hardware-version dependent and therefore selected at
+// runtime from the active hardware profile (see hardware/hw_version.hpp).
