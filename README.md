@@ -243,6 +243,29 @@ Once *box64* got installed, you should be able to start the STM32Programmer CLI 
 7. Finally start openmower again:<br>
    `sudo systemctl start openmower`
 
+#### Alternative: native `stm32loader` (no box64)
+
+[`stm32loader`](https://github.com/florisla/stm32loader) supports the STM32C0
+bootloader and runs natively on the Raspberry Pi. Install `uv` once, then flash:
+
+```bash
+# one-time: install uv/uvx (official installer)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# flash (the three commands)
+sudo systemctl stop openmower
+stty -F /dev/ttyAMA3 115200 raw
+echo -e "\x00Reboot into Bootloader" > /dev/ttyAMA3
+uvx stm32loader -p /dev/ttyAMA3 -b 115200 -f C0 -e -w -v firmware_xesc_yf_rev4.bin -g 0x08000000
+sudo systemctl start openmower
+```
+
+Notes:
+- Use `-e` (global mass erase), **not** `--auto-erase`; the C0 page size is not
+  defined in `stm32loader`'s device table.
+- The STM32CubeProgrammer method above is the tested fallback.
+- The v1.x first-boot warning above applies to this method too.
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -309,10 +332,11 @@ Once done:
 4. Compile the firmware binary:<br>
   `scons [profile=<release|debug>] [build]`
 5. Flash firmware:<br>
-  For this, a specific [xPack OpenOCD](https://xpack-dev-tools.github.io/openocd-xpack/) version is required. Either install your own one, or use the one within the package folder by:<br>
+  For STM32C0 support, [xPack OpenOCD](https://xpack-dev-tools.github.io/openocd-xpack/) **>= 0.12.0-3** is required. Either install your own one, or use the bundled one (linux-x64 only; on aarch64/Raspberry Pi use a native OpenOCD >= 0.12.0-3):<br>
   `export MODM_OPENOCD_BINARY=../packages/xpack-openocd-0.12.0-3-linux-x64/bin/openocd`<br>
   Afterwards flash the firmware via:<br>
-  `scons program`
+  `scons program`<br>
+  `scons program` runs `program ... verify` followed by `reset run`. With the ST-Link HLA driver, OpenOCD resets via SRST (NRST). If NRST is not connected (or disabled on v1.x), the MCU may not reset; connect NRST or power-cycle the board. `scons reset` uses the same SRST path.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
