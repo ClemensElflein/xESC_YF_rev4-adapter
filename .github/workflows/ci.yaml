@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: INTI-CMNB/KiBot@v2_k9
+      - uses: INTI-CMNB/KiBot@v2_k10
         with:
           config: PCB/xESC_YF_r4.kibot.yaml
           board: PCB/xESC_YF_r4.kicad_pcb
@@ -36,7 +36,7 @@ jobs:
           git config --global --add safe.directory /__w/modm/modm
       - name: Update lbuild
         run: |
-          pip3 install --upgrade --upgrade-strategy=eager modm
+          pip3 install --upgrade --upgrade-strategy=eager modm GitPython
       - name: Build HW V1 firmware
         run: |
           cd firmware/src
@@ -73,7 +73,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: INTI-CMNB/KiBot@v2_k9
+      - uses: INTI-CMNB/KiBot@v2_k10
         with:
           config: PCB/xESC_YF_r4.kibot.yaml
           board: PCB/xESC_YF_r4.kicad_pcb
