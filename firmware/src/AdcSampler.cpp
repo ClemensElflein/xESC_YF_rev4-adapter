@@ -28,6 +28,8 @@ using namespace modm::literals;
 std::array<uint16_t, AdcSampler::sequence.size()> AdcSampler::_data = {};
 std::array<float, AdcSampler::sequence.size()> AdcSampler::_cached_values = {};
 bool AdcSampler::_cache_dirty = false;
+float AdcSampler::_cs_voltage = 0.0f;
+float AdcSampler::_cs_zero_voltage = 0.0f;
 
 /**
  * @brief Initialize, connect, configure and start free running ADC1
@@ -79,6 +81,18 @@ bool AdcSampler::getCacheDirty() {
  */
 float AdcSampler::getValue(const Sensors sensor) {
   return _cached_values[sensor];
+}
+
+float AdcSampler::getCsVoltage() {
+  return _cs_voltage;
+}
+
+float AdcSampler::getCsZeroVoltage() {
+  return _cs_zero_voltage;
+}
+
+void AdcSampler::setCsZeroVoltage(float voltage) {
+  _cs_zero_voltage = voltage;
 }
 
 void AdcSampler::switchToSingleShot() {
@@ -135,6 +149,7 @@ void AdcSampler::sequence_handler() {
 
     // V_CS
     float v_cs = vref_mv * _data.at(Sensors::CurrentSense) / (ADC_NUM_CODES << 4) / 1000.0f;
+    _cs_voltage = v_cs;
 
     // I_CS
     _cached_values[Sensors::CurrentSense] = Board::adc::CalculateCurrent(v_cs);

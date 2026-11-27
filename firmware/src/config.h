@@ -41,3 +41,27 @@
 #define HW_LIMIT_PCB_TEMP 80.0f
 // The current limit is hardware-version dependent and therefore selected at
 // runtime from the active hardware profile (see hardware/hw_version.hpp).
+
+// Open-load ("Open VMC") detection for the HW_V2 TPS1H1x0 current-sense (CS) path
+//
+// The CS pin (and the ADC itself) has a small offset in the low millivolt range
+// (~4mV measured), which used to be compared against a fixed 2mA threshold.
+// As I_CS scales with R_CS (R17) but the offset is a fixed voltage, that
+// comparison broke with R17 = 510R (HW v2.1): 4mV ≙ 3.9mA > 2mA.
+// Therefore the offset is captured once at boot, whilst the VM switch is still
+// off and no load current can flow, and gets subtracted before the comparison.
+// This makes the ON-state detection independent of R17, the ADC offset and part
+// tolerances (works for HW v2.0 / R17=1k and HW v2.1 / R17=510R alike).
+//
+// ON state: Open load if the CS voltage rises less than OPEN_LOAD_ON_DELTA_V
+// above the calibrated zero. 5mV ≙ 4.9mA @ R17=510R / 2.5mA @ R17=1k.
+// It has to stay well below the ~10-12mA idle current of the stock blade motor
+// controller, otherwise a connected but idle motor would be reported as open.
+#define OPEN_LOAD_ON_DELTA_V 0.005f
+// Plausibility limit for the boot calibration: above this, the OFF-state level
+// (see below) has to be assumed instead of a valid zero reference.
+#define OPEN_LOAD_ZERO_MAX_V 0.5f
+// OFF state: On open load the TPS pulls CS to V_CS,h (>= 4.3V), which R16/D5
+// clamp to ~3.0-3.3V at the ADC. Every level clearly above the linear
+// current-sense range (0..~3V ≙ 0..3A @ R17=510R) means open load.
+#define OPEN_LOAD_OFF_LEVEL_V 2.5f
