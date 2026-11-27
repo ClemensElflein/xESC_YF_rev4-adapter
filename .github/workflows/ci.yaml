@@ -6,6 +6,11 @@ on:
       - "**.md"
   workflow_dispatch:
 
+# GITHUB_TOKEN is read-only by default. The build jobs don't need more, the
+# release jobs get contents: write explicitly (see below).
+permissions:
+  contents: read
+
 jobs:
 
   erc-drc-checks:
@@ -68,6 +73,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
     needs: firmware
+    permissions:
+      contents: write  # create the release and upload its assets
 
     steps:
       - uses: actions/checkout@v4
@@ -108,6 +115,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref_type != 'tag'
     needs: firmware
+    permissions:
+      contents: write  # update the "latest" pre-release
     steps:
       - uses: actions/checkout@v4
         with:
