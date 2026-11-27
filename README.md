@@ -76,7 +76,9 @@ The latter has the advantage that you immediately see that you already crossed g
 
 ## Prerequisites
 
-* The compiled firmware, which can be found within the [Actions](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/actions) section. Click the one you're interested in (newest or tagged), scroll down to 'Artifacts', download and unzip to somewhere.
+* The compiled firmware from the [Releases](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/releases) section. Use the `latest` pre-release for the newest development build, or a tagged release (e.g. `v0.4.0`) for a released version. Download and unzip `firmware_xesc-yf-rev4*.zip`; it contains the firmware for both hardware versions:
+  * `firmware_xesc_yf_rev4_v1.bin` - hardware v1.x
+  * `firmware_xesc_yf_rev4_v2.bin` - hardware v2.x
 * As of writing, your openmower image has to be on edge version >= commit [0bfd489](https://github.com/ClemensElflein/open_mower_ros/commit/0bfd489401b3e659d183e6c1f9b557cb0d59d3c1) which happened on 2024-07-04
 
 ## Firmware Installation
@@ -145,9 +147,9 @@ We have two options to install the firmware:<br>
 
 1. Connect your ST-Link probe to the adapter PCB. Do **not** connect the 3.3V pin if your adapter is already assembled to the OpenMower Mainboard and gets powered by it!
 
-2. Flash the adapter:
+2. Flash the adapter (use `firmware_xesc_yf_rev4_v1.bin` for HW v1.x):
    ```sh
-   st-flash --reset write firmware_xesc_yf_rev4.bin 0x08000000
+   st-flash --reset write firmware_xesc_yf_rev4_v2.bin 0x08000000
    ```
    When done, st-flash should report 'Flash written and verified! jolly good!' (or similar) and immediately reboot.<br>
 
@@ -224,7 +226,7 @@ Once *box64* got installed, you should be able to start the STM32Programmer CLI 
    ```
 
 5. Flash:<br>
-   `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=/dev/ttyAMA3 -w firmware_xesc_yf_rev4.bin 0x08000000`
+   `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=/dev/ttyAMA3 -w firmware_xesc_yf_rev4_v2.bin 0x08000000`
 
 6. Reset the device (start our newly flashed program):<br>
    `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI -c port=/dev/ttyAMA3 --go 0x08000000`
@@ -258,7 +260,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 sudo systemctl stop openmower
 stty -F /dev/ttyAMA3 115200 raw
 echo -e "\x00Reboot into Bootloader" > /dev/ttyAMA3
-uvx stm32loader -p /dev/ttyAMA3 -b 115200 -f C0 -e -w -v firmware_xesc_yf_rev4.bin -g 0x08000000
+uvx stm32loader -p /dev/ttyAMA3 -b 115200 -f C0 -e -w -v firmware_xesc_yf_rev4_v2.bin -g 0x08000000
 sudo systemctl start openmower
 ```
 
