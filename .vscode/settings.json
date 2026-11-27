@@ -1,5 +1,10 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/firmware/src",
-    "cmake.buildDirectory": "${workspaceFolder}/firmware/build",
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    "files.associations": {
+        "array": "cpp",
+        "string_view": "cpp",
+        "span": "cpp",
+        "compare": "cpp",
+        "cstdint": "cpp",
+        "*.in": "cpp"
+    }
 }

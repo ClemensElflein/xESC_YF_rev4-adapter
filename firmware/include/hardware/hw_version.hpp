@@ -4,18 +4,15 @@
 
 namespace hardware {
     // ============================================================================
-    // Flash Storage Format
+    // OTP Record Format
     // ============================================================================
 
-    // Minimal flash storage format for hardware config in OTP area
+    // Minimal OTP record format for the hardware version
     // DO NOT CHANGE without considering backward compatibility!
 #pragma pack(push, 1)  
-    struct FlashHardwareConfig {
-        char magic[HARDWARE_CONFIG_MAGIC_SIZE];  // Hardware config magic string
-        struct {
-            uint8_t major;
-            uint8_t minor;
-        } version;
+    struct OtpHardwareVersion {
+        char magic[HARDWARE_VERSION_MAGIC_SIZE];  // Hardware version magic string
+        VersionInfo version;
         uint16_t crc16;  // CRC16-CCITT-FALSE over previous bytes
 
         // Check if this matches a specific version
@@ -25,25 +22,25 @@ namespace hardware {
 
         // Check if magic string is valid
         bool isValidMagic() const {
-            for (size_t i = 0; i < HARDWARE_CONFIG_MAGIC_SIZE - 1; ++i) {
-                if (magic[i] != HARDWARE_CONFIG_MAGIC[i]) {
+            for (size_t i = 0; i < HARDWARE_VERSION_MAGIC_SIZE - 1; ++i) {
+                if (magic[i] != HARDWARE_VERSION_MAGIC[i]) {
                     return false;
                 }
             }
-            return magic[HARDWARE_CONFIG_MAGIC_SIZE - 1] == '\0';
+            return magic[HARDWARE_VERSION_MAGIC_SIZE - 1] == '\0';
         }
     };
 #pragma pack(pop)
 
+    static_assert(sizeof(OtpHardwareVersion) == 15, "OtpHardwareVersion layout changed!");
+
     // ============================================================================
-    // Flash OTP Access
+    // OTP Access
     // ============================================================================
 
-    // STM32C0 flash OTP area location for hardware config
-    // Currently (and it's expected that this is fixed), a FlashHardwareConfig struct is 15 bytes long 
-    // which is 2 of 128 OTP dwords. So, in future, if required, we could also store multiple versions 
-    // every 2 dwords and use the newest (parsing from the end backwards).
-    constexpr uintptr_t FLASH_HARDWARE_CONFIG_ADDRESS = 0x1FFF7000;
+    // STM32C0 OTP area address of the hardware-version record.
+    // The record is 15 bytes long, which is 2 of the 128 OTP double words (64 bit each).
+    constexpr uintptr_t OTP_HARDWARE_VERSION_ADDRESS = 0x1FFF7000;
 
     // ============================================================================
     // CRC Calculation
@@ -69,46 +66,99 @@ namespace hardware {
     }
 
     // ============================================================================
-    // Config Validation & Access
+    // Record Validation & Access
     // ============================================================================
 
-    // Load hardware config from flash OTP area
-    inline const FlashHardwareConfig& loadFromFlash() {
-        const FlashHardwareConfig* flash_ptr =
-            reinterpret_cast<const FlashHardwareConfig*>(FLASH_HARDWARE_CONFIG_ADDRESS);
+    // Read the hardware-version record from the OTP area
+    inline const OtpHardwareVersion& loadHardwareVersion() {
+        const OtpHardwareVersion* otp_ptr =
+            reinterpret_cast<const OtpHardwareVersion*>(OTP_HARDWARE_VERSION_ADDRESS);
 
-        return *flash_ptr;
+        return *otp_ptr;
     }
 
-    // Validate flash config (magic + CRC)
-    inline bool isValidFlashConfig(const FlashHardwareConfig& config) {
+    // Validate the hardware-version record (magic + CRC)
+    inline bool isValidHardwareVersion(const OtpHardwareVersion& record) {
         // Check magic string first
-        if (!config.isValidMagic()) {
+        if (!record.isValidMagic()) {
             return false;
         }
 
         // Calculate CRC over everything except the CRC field itself
         uint16_t calculated_crc = calculateCrc16CcittFalse(
-            reinterpret_cast<const uint8_t*>(&config),
-            sizeof(FlashHardwareConfig) - sizeof(config.crc16)
+            reinterpret_cast<const uint8_t*>(&record),
+            sizeof(OtpHardwareVersion) - sizeof(record.crc16)
         );
 
-        return calculated_crc == config.crc16;
+        return calculated_crc == record.crc16;
+    }
+
+    // ============================================================================
+    // Hardware profiles (analog settings per hardware revision)
+    // ============================================================================
+
+    // The analog configuration is compiled into the firmware, not stored in OTP.
+    // At boot the active profile is selected from the OTP hardware version:
+    //   - all versions < 2.1 (incl. no/legacy OTP): R17 = 1k,   1.25 A limit
+    //   - HW v2.1:                                  R17 = 510R, 2.0 A limit
+    //
+    // Current-limit notes for HW v2.1:
+    //   - 3.0 A: nominal TPS1H100 hardware current limit (R14 = 820R,
+    //            +/-14% => 2.59..3.43 A). This is the hardware safety net,
+    //            not a software control target.
+    //   - 2.5 A: maximum sensible software limit: below the guaranteed
+    //            minimum TPS limit (2.59 A). The ADC range (0..3.1 V with
+    //            R17 = 510R => 1.02 V/A) covers up to ~3.0 A.
+    //   - 2.0 A: selected profile limit: headroom over the motor I_max
+    //            (1.5 A) at full 7S battery voltage, but below the TPS limit.
+    struct HardwareProfile {
+        const char* name;
+        uint16_t r_cs_ohm;
+        float current_limit;
+    };
+
+    inline constexpr HardwareProfile HW_PROFILE_DEFAULT = {"HW v1.x/v2.0", 1000, 1.25f};
+    inline constexpr HardwareProfile HW_PROFILE_V2_1 = {"HW v2.1", 510, 2.0f};
+
+    // Active profile pointer, set once at boot by initActiveProfile().
+    inline const HardwareProfile* active_profile = &HW_PROFILE_DEFAULT;
+
+    inline const HardwareProfile& getActiveProfile() {
+        return *active_profile;
+    }
+
+    inline void initActiveProfile() {
+        const auto& hw_version = loadHardwareVersion();
+        if (isValidHardwareVersion(hw_version) && hw_version.version.major == 2 && hw_version.version.minor >= 1) {
+            active_profile = &HW_PROFILE_V2_1;
+        } else {
+            active_profile = &HW_PROFILE_DEFAULT;
+        }
+    }
+
+    // Current-sense resistor (R17/R_CS) of the active hardware profile
+    inline uint16_t getCurrentSenseResistor() {
+        return active_profile->r_cs_ohm;
+    }
+
+    // Firmware overcurrent limit of the active hardware profile
+    inline float getHardwareCurrentLimit() {
+        return active_profile->current_limit;
     }
 
     // ============================================================================
     // Compile-Time Hardware Version Check
     // ============================================================================
 
-    // Check if flashed hardware config matches the compiled binary version
+    // Check if the OTP hardware version matches the compiled binary version
     // This is used to detect when wrong firmware is flashed to wrong hardware
-    inline bool checkFlashMatchesBinary() {
-        const auto& flash_config = loadFromFlash();
+    inline bool checkHardwareVersionMatchesBinary() {
+        const auto& otp_version = loadHardwareVersion();
 
-        // If flash config is invalid, assume default behavior based on hardware version:
+        // If the OTP record is invalid, assume default behavior based on hardware version:
         // - V1 hardware: Early units may not have OTP record -> assume V1 (return true)
         // - V2 hardware: Should always have OTP record -> mismatch (return false)
-        if (!isValidFlashConfig(flash_config)) {
+        if (!isValidHardwareVersion(otp_version)) {
 #ifdef HW_V1
             return true;  // V1 firmware on hardware without OTP -> assume V1 hardware (backward compat)
 #elif defined(HW_V2)
@@ -120,11 +170,13 @@ namespace hardware {
 #endif
         }
 
-        // Check if flash version matches compile-time hardware version
+        // Check if the OTP version matches the compile-time hardware version
 #ifdef HW_V1
-        return flash_config.isVersion(1, 0);
+        return otp_version.isVersion(1, 0);
 #elif defined(HW_V2)
-        return flash_config.isVersion(2, 0);
+        // A single HW_V2 binary supports both v2.0 (R17 = 1k) and v2.1
+        // (R17 = 510R). The analog profile is selected from the OTP version.
+        return otp_version.isVersion(2, 0) || otp_version.isVersion(2, 1);
 #elif defined(HW_BRAND)
         return true;
 #else
@@ -140,26 +192,31 @@ namespace hardware {
     // Call this during initialization when PROTO_DEBUG is enabled
     template<typename IOStream>
     inline void printVersionInfo(IOStream& stream) {
-        const auto& flash_config = loadFromFlash();
+        const auto& otp_version = loadHardwareVersion();
 
 #ifdef HW_V1
         stream << "Binary: HW v1.0";
 #elif defined(HW_V2)
-        stream << "Binary: HW v2.0";
+        stream << "Binary: HW v2.0/v2.1";
 #else
         stream << "Binary: HW version unknown";
 #endif
 
-        if (isValidFlashConfig(flash_config)) {
-            stream << ", OTP Flash: v"
-                << flash_config.version.major << "."
-                << flash_config.version.minor;
+        if (isValidHardwareVersion(otp_version)) {
+            stream << ", OTP: v"
+                << otp_version.version.major << "."
+                << otp_version.version.minor;
 
-            if (!checkFlashMatchesBinary()) {
+            // Analog settings of the active hardware profile
+            stream << ", profile=" << getActiveProfile().name
+                   << ", R_CS=" << getActiveProfile().r_cs_ohm << "R"
+                   << ", I_limit=" << getActiveProfile().current_limit << "A";
+
+            if (!checkHardwareVersionMatchesBinary()) {
                 stream << " [MISMATCH - WRONG HARDWARE!]";
             }
         } else {
-            stream << ", OTP Flash: invalid/empty";
+            stream << ", OTP: invalid/empty";
 #ifdef HW_V1
             stream << " [OK - V1 backward compat]";
 #else

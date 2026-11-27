@@ -50,10 +50,19 @@ class AdcSampler : public modm::platform::Adc1 {
   static void switchToSingleShot();  // Switch from free-running to single-shot mode
   static void triggerConversion();   // Manually trigger ADC conversion (single-shot mode)
 
+  // Current-sense voltage (raw, as seen at the ADC pin) and its calibrated zero
+  // offset. Both in volts. Needed because CurrentSense (A) scales with R_CS (R17),
+  // whereas the CS pin/ADC offset is a fixed voltage. See getCsZeroVoltage().
+  static float getCsVoltage();                  // Get last converted current-sense voltage
+  static float getCsZeroVoltage();              // Get calibrated current-sense zero offset voltage
+  static void setCsZeroVoltage(float voltage);  // Store calibrated zero offset voltage
+
  private:
   static std::array<uint16_t, sequence.size()> _data;        // ADC data buffer indexed in the order of sequence
   static std::array<float, sequence.size()> _cached_values;  // In their related unit (V, A, °C)
-  static bool _cache_dirty;  // Indicate that the _cached_values need update because new ADC sequence started
+  static bool _cache_dirty;       // Indicate that the _cached_values need update because new ADC sequence started
+  static float _cs_voltage;       // Last converted current-sense voltage (V)
+  static float _cs_zero_voltage;  // Calibrated current-sense zero offset (V)
 
   static void sequence_handler();
 };

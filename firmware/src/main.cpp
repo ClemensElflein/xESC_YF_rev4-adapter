@@ -38,7 +38,8 @@ using namespace std::chrono_literals;
 #define MILLIS modm::Clock::now().time_since_epoch().count()
 
 // Global state.
-bool wrong_hw = false;  // True if FW doesn't match detected HW
+bool wrong_hw = false;           // True if FW doesn't match detected HW
+bool open_load_at_boot = false;  // True if open load was detected during boot (VM switch off)
 
 // LED GPIO objects.
 ModmGpio<LedGreen> led_green_gpio;
@@ -77,6 +78,14 @@ void UpdateFaults() {
     faults |= FAULT_UNINITIALIZED;
   }
 
+  // FAULT_OPEN_LOAD, detected at boot whilst the VM switch was still off.
+  // One-shot: from the next cycle on, the regular ON/OFF-state detection below
+  // takes over (and clears the fault again once a motor is connected).
+  if (open_load_at_boot) {
+    faults |= FAULT_OPEN_LOAD;
+    open_load_at_boot = false;
+  }
+
   // FAULT_WATCHDOG
   if (host_comm::HasWatchdogTimedOut()) {
     faults |= FAULT_WATCHDOG;
@@ -106,15 +115,21 @@ void UpdateFaults() {
   // The TPS1H100B signals faults on the CS pin that we're already reading via ADC
   // According to datasheet:
   // - Normal operation: V_CS in linear region (0-4V), proportional to current
-  // - Fault conditions: V_CS pulled to V_CS,h (typically ~5V, above ADC range)
+  // - Fault conditions: V_CS pulled to V_CS,h (>= 4.3V, above ADC range)
   //   * Short to GND / Current limit
   //   * Thermal shutdown / Thermal swing
   // - Open load (ON-state): V_CS ≈ 0 (very low current)
 
   // Check for V_CS,h condition (fault signaling)
-  // V_CS,h is typically 5V, but our ADC reads max 3.3V (VDDA)
+  // V_CS,h is >= 4.3V, but our ADC reads max 3.3V (VDDA)
   // If CS voltage is at or near VDDA, the actual voltage is likely higher (V_CS,h)
   static const float ICS_H_THRESHOLD = Board::adc::CalculateCurrent(3.2f);  // 97% of typical 3.3V VDDA
+
+  // Open load is evaluated on the raw CS voltage and relative to its calibrated
+  // zero offset (see config.h). Doing so keeps the detection independent of
+  // R_CS (R17) and the ADC offset, which is why the ON-state threshold no longer
+  // is a fixed current value.
+  const float cs_offset_voltage = AdcSampler::getCsVoltage() - AdcSampler::getCsZeroVoltage();
 
   if (vm_switch::In::isSet() && !is_shutdown) {
     // Motor should be running - check for faults
@@ -126,22 +141,30 @@ void UpdateFaults() {
       // The TPS1H100B auto-recovers when fault clears
       faults |= FAULT_OVERCURRENT;  // Use existing fault code for now
     } else {
-      // Only trigger open load if very low current happens a definable amount of times
-      if (cs_current < 0.002f) {
+      // Open load: No (or nearly no) load current, so the CS voltage stays at
+      // its zero offset. Compared as voltage, as the offset is a fixed voltage
+      // whereas cs_current scales with R_CS.
+      if (cs_offset_voltage < OPEN_LOAD_ON_DELTA_V) {
         faults |= FAULT_OPEN_LOAD;
       }
     }
   } else if (!vm_switch::In::isSet() && !is_shutdown) {
     // Motor off - check for open load in off-state
-    // In off-state with open load: CS pin pulled to V_CS,h
-    if (cs_current >= ICS_H_THRESHOLD) {
+    // In off-state with open load: CS pin pulled to V_CS,h, which R16/D5 clamp
+    // to a level clearly above the linear current-sense range
+    if (AdcSampler::getCsVoltage() >= OPEN_LOAD_OFF_LEVEL_V) {
       faults |= FAULT_OPEN_LOAD;
+    } else if (AdcSampler::getCsVoltage() < OPEN_LOAD_ZERO_MAX_V) {
+      // VM switch off and no open load -> no load current can flow, so the CS
+      // level is a valid zero reference. Keeps the ON-state detection calibrated
+      // even if the motor gets connected after a boot open load.
+      AdcSampler::setCsZeroVoltage(AdcSampler::getCsVoltage());
     }
   }
 #endif
 
   // Handle FAULT_OVERCURRENT only if VMC is enabled and FAULT_OPEN_LOAD not already happen
-  const float overcurrent_limit = std::min(HW_LIMIT_CURRENT, settings.motor_current_limit);
+  const float overcurrent_limit = std::min(hardware::getHardwareCurrentLimit(), settings.motor_current_limit);
   if (vm_switch::In::isSet() && !(faults & FAULT_OPEN_LOAD) && cs_current > overcurrent_limit) {
     if (overcurrent_limit_count++ >= 10) {  // Require 10 consecutive overcurrent readings (200ms at 20ms status update)
       faults |= FAULT_OVERCURRENT;
@@ -260,6 +283,10 @@ int main() {
   // Initialize common hardware.
   Board::initialize();
 
+  // Select the hardware profile (R17/current limit) from the OTP hardware
+  // version once, before the ADC interrupt starts using it.
+  hardware::initActiveProfile();
+
 #ifdef PROTO_DEBUG
   // Print hardware version info.
   MODM_LOG_INFO << "xESC_YF_rev4 - ";
@@ -271,7 +298,7 @@ int main() {
   // SAFETY: We only initialize the GPIO for the OTHER hardware version
   // to avoid touching unknown GPIOs that might control motors or dangerous
   // hardware!
-  if (!hardware::checkFlashMatchesBinary()) {
+  if (!hardware::checkHardwareVersionMatchesBinary()) {
     wrong_hw = true;
 #ifdef HW_V1
     // V1 binary on V2 hardware -> Initialize V2 LED GPIO.
@@ -327,10 +354,55 @@ int main() {
   motor_control::Init();
   host_comm::Init();
 
+  // Calibrate the current-sense zero offset and check for an open load (motor
+  // not connected) whilst the VM switch is still off, i.e. no load current can
+  // flow. This has to happen before the status timer starts, as VMC gets
+  // enabled again in the very first status cycle (see UpdateFaults()).
+  // HW_V1 keeps its legacy TPS1H200A /FAULT pin detection untouched.
+#ifndef HW_V1
+  if (!wrong_hw) {
+    static constexpr uint8_t CS_CALIBRATION_SAMPLES = 4;
+    static constexpr uint32_t CS_CALIBRATION_TIMEOUT_MILLIS = 100;
+    AdcSampler::switchToSingleShot();
+
+    float cs_sum = 0.0f;
+    float cs_max = 0.0f;
+    uint8_t cs_samples = 0;
+    for (uint8_t i = 0; i < CS_CALIBRATION_SAMPLES; ++i) {
+      AdcSampler::triggerConversion();
+      const uint32_t start = MILLIS;
+      while (AdcSampler::getCacheDirty() && (MILLIS - start < CS_CALIBRATION_TIMEOUT_MILLIS)) {
+      }
+      const float cs_voltage = AdcSampler::getCsVoltage();
+      cs_sum += cs_voltage;
+      cs_samples++;
+      if (cs_voltage > cs_max) {
+        cs_max = cs_voltage;
+      }
+    }
+
+    if (cs_max >= OPEN_LOAD_OFF_LEVEL_V) {
+      // Open load in OFF state, e.g. motor cable not connected at boot.
+      // Fault gets kept alive by the OFF-state check in UpdateFaults().
+      open_load_at_boot = true;
+    } else if ((cs_max < OPEN_LOAD_ZERO_MAX_V) && (cs_samples > 0)) {
+      AdcSampler::setCsZeroVoltage(cs_sum / cs_samples);
+    }
+    // else: Implausible CS level -> keep the zero offset at 0 and leave it to
+    //       the regular checks instead of calibrating against a bogus reference
+
+#ifdef PROTO_DEBUG
+    MODM_LOG_INFO << "CS zero offset=" << AdcSampler::getCsZeroVoltage()
+                  << "V, boot open load=" << (open_load_at_boot ? "yes" : "no") << modm::endl
+                  << modm::flush;
+#endif
+  }
+#endif  // !HW_V1
+
   // Prepare status message.
   status.message_type = XESCYFR4_MSG_TYPE_STATUS;
   status.fw_version_major = 0;
-  status.fw_version_minor = 3;
+  status.fw_version_minor = 4;
   status.direction = 0;  // Motor has only one direction
 
   // Status Timer.
