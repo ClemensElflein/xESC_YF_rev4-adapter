@@ -26,7 +26,7 @@
 
   |             v1.x Hardware              |             v2.x Hardware              |
   | :------------------------------------: | :------------------------------------: |
-  | ![HW v1.x](assets/xESC_YF_r4_v1.0.png) | ![HW v2.x](assets/xESC_YF_r4_v2.0.png) |
+  | ![HW v1.x](assets/xESC_YF_r4_v1.0.png) | ![HW v2.x](assets/xESC_YF_r4_v2.1.png) |
 
 </div>
 
@@ -71,7 +71,7 @@ In addition to this adapter, it's nevertheless **required to exchange two cables
 > Check the image and validate if your
 > cables do have the same colors! If not adapt accordingly
 
-Either exchange the pins within the plug, or do it the lazy way like me, with a luster terminal.
+Either exchange the pins within the plug, or do it the lazy way like me, with a screw terminal block.
 The latter has the advantage that you immediately see that you already crossed green/black.
 
 ## Prerequisites
@@ -132,17 +132,14 @@ The branding process writes a small hardware version record to the first two OTP
 <br>
 <br>
 
-**Firmware Installation Variants**
+### Firmware Installation Variants
 
-We have two options to install the firmware. Either via:<br>
-- ST-Link debugger/programmer, for which you need to have access to the adapter PCB's SWDIO pins, or via
-- Open-Mower's UART via STM32 internal bootloader (only OpenMower V1 based hardware; not supported on V2 carrier boards)
+We have two options to install the firmware:<br>
 
-The adapter itself runs on OpenMower V1 and V2 hardware. UART/bootloader flashing is only available on V1; on V2 use the ST-Link/SWD path.
-
+<details>
+<summary><b>ST-Link debugger/programmer</b> (OpenMower V1 and V2 hardware), for which you need to have access to the adapter PCB's SWDIO pins</summary>
 
 ### Firmware Installation via ST-Link debugger/programmer
-
 
 #### Flash
 
@@ -169,12 +166,14 @@ The adapter itself runs on OpenMower V1 and V2 hardware. UART/bootloader flashin
 
    If the board doesn't come up with blink signs, unplug and replug it. But once you see blink signs, do **not** unplug it before getting the described LED codes of the previous paragraph.   
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+</details>
+
+<details>
+<summary><b>Serial UART connection</b> (OpenMower V1 hardware only) via STM32 internal bootloader</summary>
 
 ### Firmware Installation via serial connection (UART)
 
-Firmware flashing via UART is currently only possible with OpenMower V1 based hardware.
-The adapter also runs on OpenMower V2 hardware, but UART/bootloader flashing is not supported on the V2 carrier boards; use ST-Link/SWD there.
+Firmware flashing via UART is currently only possible with OpenMower V1 based hardware; on V2 carrier boards use the ST-Link/SWD path (Variant A).
 
 #### Requirements
 
@@ -190,7 +189,7 @@ Luckily they do have pre-build [Debian packages](https://github.com/ptitSeb/box6
 Once *box64* got installed, you should be able to start the STM32Programmer CLI i.e. via: `/opt/STM32CubeProgrammer/bin/STM32_Programmer_CLI`
 
 
-### Flash
+#### Flash
 
 1. Login to your OpenMower Raspberry-Pi and stop openmower:<br>
    `sudo systemctl stop openmower`
@@ -269,10 +268,16 @@ Notes:
 - The STM32CubeProgrammer method above is the tested fallback.
 - The v1.x first-boot warning above applies to this method too.
 
+</details>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## OpenMower Config
+
+Choose the variant that matches your OpenMower mainboard:
+
+<details>
+<summary><b>OpenMower V1 based hardware</b> (mower_config)</summary>
 
 ### OpenMower V1 based Hardware (mower_config)
 
@@ -297,12 +302,20 @@ export OM_MOWER_ESC_TYPE="xesc_mini"
 
 Once adapted, restart openmower via: `sudo systemctl restart openmower`
 
-### OpenMower V2 based Hardware: (xCore Firmware)
+</details>
 
-Edit OpenMower stack config via `openmower configure env` and set `FIRMWARE="yardforce-v4"`
+<details>
+<summary><b>OpenMower V2 based hardware</b> (xCore firmware)</summary>
+
+### OpenMower V2 based Hardware (xCore Firmware)
+
+Nothing to configure: as of OpenMower 1.6.x the matching firmware (`yardforce-v4`) is selected automatically.
+Only for older versions, set it manually via `openmower configure env` → `FIRMWARE="yardforce-v4"`.
 
 > [!NOTE]
 > The adapter runs on OpenMower V2 hardware, but firmware updates via UART/bootloader are only available on V1. On V2 use ST-Link/SWD.
+
+</details>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -402,7 +415,7 @@ See the [open issues](https://github.com/ClemensElflein/xESC_YF_rev4-adapter/iss
 
   | Version | Release Date | Info                                                                                                                                                                                              |
   | ------- | :----------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | 2.1.0   |  2026-12-??  | - Improve current sense ADC clamping<br>- Increase HW current limit to 3A (R14/R_CL = 820 Ω)<br>- R17 (R_CS) rework to 510 Ω for the 2 A firmware profile<br>- Minor part and routing adjustments |
+  | 2.1.0   |  2026-11-27  | - Improve current sense ADC clamping<br>- Increase HW current limit to 3A (R14/R_CL = 820 Ω)<br>- R17 (R_CS) rework to 510 Ω for the 2 A firmware profile<br>- Minor part and routing adjustments |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
